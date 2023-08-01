@@ -1,0 +1,46 @@
+\chapter{Design and Tools}
+The design and tools that address the requirements of human biomechanics and movement analysis are examined in this chapter. The prerequisites and criteria are firstly examined to replicate the rehabilitation scenario. An in depth analysis of the Dynamic Arm Simulator (DAS) and Open Sim CMC is done to understand their possible potential. The Hill-Based Muscle Modeling technique is investigated alongside with the different DAS functionalities, emphasizing the critical role of its underlying dynamics in shaping the Model Design.
+
+%Briefly introduce the purpose of the chapter and its significance in the context of your overall work.
+%Provide an overview of the topics you will cover: investigating needs, researching information on Dynamic Arm Simulator (DAS) and Open Sim CMC, Hill-Based Muscle Modeling, DAS functionalities, and Dynamics of DAS.
+\section{Criteria Analysis}
+
+To pinpoint the crucial factors that would direct our choice of design and tools, a thorough criterion analysis was carried out. The following important standards came to be recognized as essential elements in the search for an efficient simulation solution:
+
+\begin{enumerate}
+    \item \textbf{Real Arm Simulator} In order to correctly reproduce real-world dynamics and movements, an exact simulation of an arm was required.
+    \item \textbf{Accurate Dynamics Representation} To ensure that the simulated arm's behavior and responses adhere to the fundamentals of human biomechanics.
+    \item \textbf{Neural Stimulation Control} An essential criteria to provide more realistic interaction between the simulated arm and the brain or the FES.
+    \item \textbf{Tracking} Ability to track the arm´s movement either in joint space or task space. This will provide flexibility in the control system.
+    \item \textbf{EMG Reading} It should present the capability or a possibility to read real or fake neural excitation data. This data will be used as the main driven input to control the arm's stimulation.
+    \item \textbf{Control Model Integration} A key criterion is that the tool presents the possibility to develop and evaluate various control methods.
+    \item \textbf{External Forces Addition} In order to simulate realistic interactions and enabling more thorough and accurate simulation of arm dynamics.
+    
+\end{enumerate}
+
+
+
+\section{Dynamic Arm Simulator (DAS)}
+Detail the sources you consulted during your research.
+Explain why you chose Dynamic Arm Simulator
+Provide an overview of Dynamic Arm Simulator and its role in your project.
+Explain the key features and functionalities of DAS.
+Discuss the benefits of using DAS in your design.
+
+
+\subsection{Hill-Based Muscle Modelling}
+Describe the Hill-Based Muscle Modeling method and its significance in biomechanics.
+Explain how it is utilized within Dynamic Arm Simulator.
+Discuss any advantages or limitations of this modeling approach.
+
+\subsection{DAS Functionalities}
+\input{Chapters/05_2_DynamicArmSimulator}
+
+
+Use cases and practical examples.
+
+\subsubsection{Dynamics of DAS}
+\subsubsection{Joint Moments}
+\subsubsection{Stick}
+
+\section{Conclusion}
