@@ -190,17 +190,4 @@ tick label style={/pgf/number format/assume math mode}, % To apply main font to 
   \ifodd\value{page}\hbox{}\newpage\fi
 }
 
-\usepackage{listings}
 
-% Configure the listings package for MATLAB code
-\lstset{
-    language=Matlab,
-    basicstyle=\ttfamily\small, % Adjust the font and size for the code
-    breaklines=true, % Allow breaking lines if the code is too long
-    frame=single, % Add a frame around the code
-    numbers=left, % Show line numbers
-    numberstyle=\tiny\color{gray}, % Customize line number style
-    keywordstyle=\color{blue}, % Set keywords in blue color
-    commentstyle=\color{green!40!black}, % Set comments in green color
-    stringstyle=\color{orange}, % Set strings in orange color
-}
