@@ -1,19 +1,43 @@
+\newpage
 \section{Dynamic Simulation of the Arm: A Comprehensive Model for Musculoskeletal Dynamics}
 The study of human mobility has benefited greatly from the development of musculoskeletal modeling, which is now a crucial tool for comprehending the dynamics of the human body. Multibody models have historically proved helpful in resolving inverse dynamic issues, particularly in the analysis of human gait and arm movement (please add paper citation for more information). The main disadvantage of these inverse dynamic techniques is the need to gather data from participants who are actively doing the required movement.
 
-Moving away from conventional techniques, muscle-driven forward dynamics have allowed the simulation of innovative and fictional movements that would resemble impaired movements, such as those of stroke survivors. These simulations have practical applications in fields like rehabilitation and motor control research. In \cite{IMP} the DAS allowed to test controllers and command interfaces with a human user in the loop. For this project, forward dynamics simulation will be used to test the hypothesis for EMG-inspired PD control of Functional Electrical Stimulation (FES) in stroke rehabilitation. 
+Moving away from conventional techniques, muscle-driven forward dynamics have allowed the simulation of innovative and fictional movements that would resemble impaired movements, such as those of stroke survivors. These simulations have practical applications in fields such as rehabilitation and motor control research. In \cite{IMP} the DAS allowed to test controllers and command interfaces with a human user in the loop. For this project, forward dynamics simulation will be used to test the hypothesis for EMG-inspired PD control of Functional Electrical Stimulation (FES) in stroke rehabilitation. 
 
-A summary of the musculoskeletal dynamics, including topics like multibody dynamics, muscle contraction dynamics, and muscle activation dynamics, will be covered in this section. Then, an explanation of the forward-dynamic implicit formulation will be given. This formulation is proven to improve the computational time required for modeling the dynamics with only an RMS error of 0.11 degrees in joint angles when running at real-time speed for a gait simulation with a prosthetic foot and ankle \cite{IMP}.
+A summary of the musculoskeletal dynamics, including topics like multibody dynamics, muscle contraction dynamics, and muscle activation dynamics, will be covered in this section. Then, an explanation of the forward-dynamic implicit formulation will be given. This formulation has been proven to improve the computational time required to model dynamics with only an RMS error of 0.11 degrees in joint angles when running at real-time speed for a gait simulation with a prosthetic foot and ankle \cite{IMP}.
 
-Overall, the Dynamic Arm Simulator (DAS) offers a robust framework for the simulation of human arm movements. It is implemented as a MATLAB Mex function that contains the system dynamics and other functions, making it accessible via a MATLAB function interface and flexible and adaptable for various applications. 
+Overall, the Dynamic Arm Simulator (DAS) offers a robust framework for the simulation of human arm movements. It is implemented as a MATLAB Mex function that contains the system dynamics and other functions, making it accessible via a MATLAB function interface, flexible, and adaptable for various applications. 
 
-An extended overview of the DAS model follows in the sections below.
+An extended overview of the DAS model is provided in the following sections.
 
+\begin{table}[h!]
+    \centering
+    \caption{Nomenclature}
+    \label{tab:nomenclature}
+    \begin{tabular}{|l l|}
+        \hline
+        \multicolumn{2}{|c|}{\textbf{Nomenclature}} \\ \hline
+        \textbf{$q$} & Generalized coordinates vector \\
+        \textbf{$\dot{q}$} & Generalized angular velocities vector \\
+        \textbf{$M(q)$} & Mass matrix \\
+        \textbf{$\tau$} & Generalized forces vector/ Joint moments \\
+        \textbf{$B(q,\dot{q})$} & Coriolis, centrifugal and passive forces matrix \\
+        $L_M$ & Muscle-tendon length \\
+        $L_{CE}$ & Muscle contractile element length \\
+        $\phi$ & Pennation angle \\
+        $s$ & Muscle contraction dynamics state variable \\
+        $a$ & Activation state \\
+       \textbf{$x$} & State vector $x = (q,\dot{q},s,a)^T$ \\
+       \textbf{$u$} & Neural excitations for each muscle \\ \hline
+    \end{tabular}
+\end{table}
+\newpage
 \subsection{Structural Overview}
 Links and Degrees of Freedom
 \begin{itemize}
-    \item \textbf{7 Links}: Includes thorax, clavicle, scapula, humerus, ulna, radius, and hand. Figure \ref{fig:links} shows a colour-coded of the different links. 
+    \item \textbf{7 Links}: Includes the thorax, clavicle, scapula, humerus, ulna, radius, and hand. Figure \ref{fig:links} shows a colour-coded of the different links. 
 \end{itemize}
+
 \begin{figure}[h!]
     \centering
     \includegraphics[width=0.7\textwidth]{Pictures/DAS/Links.png}
@@ -22,8 +46,9 @@ Links and Degrees of Freedom
 \end{figure}
 
 \begin{itemize}
-    \item \textbf{11 Degrees of Freedom}: These are comprised of 2 orthogonal hinges at specific joints including the sterno-clavicular, acromio-clavicular, and glenohumeral joints, elbow flexion-extension, and forearm pronation-supination (see Figure \ref{fig:measuring} for reference).  Initially the model was focused on planar movement but was improved by adding independent control of shoulder girdle. This additions allowed more flexibility and stabilization when designing neuroprosthetics control algorithm \cite{RT3D}. The range of motion of the different DoF is shown in Table \ref{table:11dof}.\newline
-    Inspired on \cite{RT3D} throughout this project the arm configuration is described in 5 DoF: plane of elevation, angle of elevation, internal rotation, elbow flexion and forearm pronation following the recommendation on \cite{ISB}. These angles were restricted in order to ensure correct wrapping of muscles in the model, the final values are show in Figure \ref{fig:5dof}.
+    \item \textbf{11 Degrees of Freedom}: These consist of 2 orthogonal hinges at specific joints, including the sternoclavicular, acromioclavicular and glenohumeral joints, elbow flexion-extension, and forearm pronation-supination (see Figure \ref{fig:measuring} for reference).  Initially, the model was focused on planar movement but was improved by adding independent control of the shoulder girdle. These additions allowed for more flexibility and stabilisation when designing the neuroprosthetic control algorithm \cite{RT3D}. The range of motion of the different DoFs is shown in Table \ref{table:11dof}.\newline
+    
+    Inspired by \cite{RT3D} throughout this project the arm configuration is described in 5 DoFs: plane of elevation, angle of elevation, internal rotation, elbow flexion and forearm pronation following the recommendation in \cite{ISB}. These angles were restricted in order to ensure correct wrapping of muscles in the model, the final values are show in Figure \ref{fig:5dof}.
 \end{itemize}
 
 \begin{figure}[h!]
@@ -76,12 +101,12 @@ PS y & 5.00 & 160.00 \\
     \label{fig:muscle_elements}
 \end{figure}
 
-
+\newpage
 \subsection{Musculoskeletal Dynamics}
 % To do:: Explain the state variable and create a nomenclature table
-The dynamics governing the musculoskeletal system must be thoroughly understood in order to research it. This analysis is divided into three interconnected components: multibody dynamics, muscle activation dynamics, and muscle contraction dynamics. Multibody dynamics allows us to represent the system as a collection of interconnected rigid or flexible bodies, focusing on the kinematic constraints that guide motion. Muscle contraction dynamics describes the complex interactions of the muscle fibers and surrounding elements using the three-element Hill-type model, while muscle activation dynamics explores how neural signals translate into muscle actions.
+The dynamics governing the musculoskeletal system must be thoroughly understood in order to research it. This analysis is divided into three interconnected components: multibody dynamics, muscle activation dynamics, and muscle contraction dynamics. Multibody dynamics allows us to represent the system as a collection of interconnected rigid or flexible bodies, focusing on the kinematic constraints that guide motion. Muscle contraction dynamics describes the complex interactions of muscle fibres and surrounding elements using the three-element Hill-type model, while muscle activation dynamics explores how neural signals translate into muscle actions.
 
-The thorough analysis of the musculoskeletal dynamics is described in \cite{IMP}. In this section a summary of each most relevant section is presents with specific focus on the project's application.
+The thorough analysis of the musculoskeletal dynamics is described in \cite{IMP}. In this section, a summary of each most relevant section is presented with a specific focus on the project's application.\newline
 
 
 \subsubsection{State variables}\label{state}
@@ -101,9 +126,9 @@ The multibody model has 298 state variables. It is represented with the letter\t
 
 Multibody dynamics is used to study the motion and forces acting on the musculoskeletal system as it is identified as a system composed of interconnected rigid or flexible bodies. 
 
-Generalized coordinates are used to simplify the description of the system. As a result, the configuration of the system can be represented using the minimum number of coordinates to described the position and orientation.  
+Generalised coordinates are used to simplify the description of the system. As a result, the configuration of the system can be represented using the minimum number of coordinates to describe the position and orientation.  
 
-Generalized coordinates, are often denoted by \textit{q}. They are set of independent parameters that define the configuration of the system. In the DAS \textit{q} represents the 11 joint angles. 
+Generalized coordinates, are often denoted by \textit{q}. They are a set of independent parameters that define the configuration of the system. In the DAS \textit{q} represents the 11 joint angles. 
 
 The equations of motion for a multibody system can be expressed in the following matrix form (\cite{Siciliano2009}):
 \begin{equation}
@@ -115,8 +140,8 @@ Where,
 \begin{itemize}
     \item $\ddot{q}$ is the vector of generalized accelerations
     \item $M(q)$ is the mass matrix that describes the inertia of the system. It relates the acceleration of \textit{q} to the generalized forces.
-    \item $B(q,\dot{q})$ is the matrix that described Coriolis and centrifugal forces that arise from the motion of the bodies in the system. Moreover, it contains gravity and other passive forces.
-    \item $\tau$ is the generalized forces vector. In the case of DAS it represents the forces generated by muscles according to the muscle contraction and activation dynamics. 
+    \item $B(q,\dot{q})$ is the matrix that describes Coriolis and centrifugal forces that arise from the motion of the bodies in the system. Moreover, it contains gravity and other passive forces.
+    \item $\tau$ is the generalised force vector. In the case of DAS it represents the forces generated by muscles according to the muscle contraction and activation dynamics. 
 \end{itemize}
 
 Forward dynamics is used to predict the motion of a multibody system based on its initial conditions and known forces. As a result Equation \ref{eq:MBD} is solved to the generalized accelerations $\ddot{q}$.
@@ -127,19 +152,19 @@ Forward dynamics is used to predict the motion of a multibody system based on it
 
 The inverse of the mass matrix, $M$, is a critical component, as the simulation will not be possible if its singular. This singularity is quite common in musculoskeletal systems due to small mass and moment of inertia of body segments.
 
-Moreover, elements of $B$ can present high stiffness and damping, leading to high eigenvalues of the Jacobian matrix that correspond to fast-changing components of the system. These high stiffness and high damping lead to oscillatory behaviours within the system. The presence of stiffness, originates from the ligaments and tendons having highly nonlinear mechanical properties (zero stiffness when unloaded, high stiffness when maximally loaded).
+Moreover, elements of $B$ can present high stiffness and damping, leading to high eigenvalues of the Jacobian matrix that correspond to fast-changing components of the system. These high stiffness and high damping lead to oscillatory behaviours within the system. The presence of stiffness originates from the ligaments and tendons having highly nonlinear mechanical properties (zero stiffness when unloaded, high stiffness when maximally loaded).
 
-To counteract the stiff system, standard numerical methods, such as Euler method, require small time steps.\newline
+To counteract the stiff system, standard numerical methods, such as Euler method, require small time steps.
 
 
 \subsubsection{Muscle contraction dynamics} \label{musclecontraction}
 
 The muscle contraction dynamics is based on the three-element Hill-type model. It represents the muscle fibers (CE: contractile element), the tendon and force transmitting tissue (SEE: series elastic element), and the passive elastic tissue surrounding the muscle fibers (PEE: passive elastic element). 
-\begin{figure}[ht!]
+\begin{figure}[h!]
     \centering
 \includegraphics[width=0.4\textwidth]{Pictures/DAS/Hill-Type_MuscleModel.png}
     \caption{Three-element muscle model. CE: contractile element, SEE: series elastic element, PEE: parallel elastic element, Pennation angle $\phi$: Angle between the muscle fiber in the CE and the line of action of the muscle, $s$ state variable for the muscle contraction dynamics \cite{IMP}}
-    \label{fig:muscle_elements}
+    \label{fig:Hill-type}
 \end{figure}
 
 The contractile force is calculated by the multiplicative interaction of the maximal isometric force, the activation, the fiber length and the fiber length velocity, respectively represented in the formula below:
@@ -165,7 +190,7 @@ The differential equation for the state variable $L_{CE}$ is defined by Equation
 \newline
 \subsubsection{Muscle activation dynamics}
 
-The nervous system sends a neural excitation $u(t)$ as a control signal into the muscle that changes the activation via  a first-order nonlinear activation-deactivation process. This is because the activation $a$, also called \textit{active state} cannot be directly controlled by the nervous system. The  muscle activation of a muscle, $a$, is formulated as:
+The nervous system sends a neural excitation $u(t)$ as a control signal to the muscle that changes the activation through a first-order non-linear activation-deactivation process. This is because the activation $a$, also called the \textit{ active state} cannot be directly controlled by the nervous system. The  muscle activation of a muscle, $a$, is formulated as:
 
 \begin{equation}
     \dot{a} = (u-a)(c_{1}u + c_{2})
@@ -203,22 +228,18 @@ To predict how muscles and joints mover time based on an initial condition and n
 For real time simulation, the DAS uses Rosenbrock method as it requires quick and predictable computations. The Rosenbrock method is a numerical technique used to solve ordinary differential equations (ODEs). The ordinary differential equations describe how the arm motion changes over time. The Rosenbrock methods involves predicting the state at the next time step. It iterates until finds the right guess. The main advantages of Rosenbrcok is that it produce realistic values if the Jacobian matrices are known.
 
 The DAS implements a first order method with constant step size $h$. This means that if the the step size is halved, the error will also be halved. 
-\begin{equation}
+\begin{equation} \label{eq:rosenbrock}
  \begin{aligned}
     \Delta x = (\frac{\partial f}{\partial x} + \frac{1}{h}\frac{\partial f}
     {\partial \dot{x}})^{-1}(\frac{\partial f}{\partial \dot{x}}\dot{x}_n - f(x_n, \dot{x}_n, u_n) - \frac{\partial f}{\partial u}*(u_{n+1} - u_{n}))\\
     x_{n+1} = x_n + \Delta{x} \\
     \dot{x}_{n+1} = \frac{\Delta{x}}{h}
 \end{aligned}
-\end{equation}
-
-
-
-
+\end{equation} \newpage
 
 \subsection{Functionalities}
 
-The DAS can be downloaded from the simTK.org website (\href{https://simtk.org/projects/das}{https://simtk.org/projects/das}). It includes the \textbf{main mex file}, some files to test the correct functionality and installation of the simulation environment and a basic manual for understanding its different functionalities. 
+The DAS can be downloaded from the simTK.org website (\href{https://simtk.org/projects/das}{https://simtk.org/projects/das}). It includes the \textbf{main MEX file}, some files to test the correct functionality and installation of the simulation environment and a basic manual for understanding its different functionalities. 
 
 \subsubsection{Loading the model}
 
@@ -243,15 +264,15 @@ forces = das3('Muscleforces', x)
 \subsubsection{Muscle Length and SEE Slack}
 The length of each muscle (meters) and the slack length of series elastic element (m) are given using the \textit{'Musclelengths'} and \textit{'SEEslack'} functions respectively. 
 
-When a muscle contracts, it shortens its length to produce force. Before being applied to the load, this force passes via the series elastic element (SEE). The SEE is in a slack or nonstretched state when a muscle is in rest and not exerting any force. Because the SEE is not applying any further tension to the muscle fibers at this time, the length of the contractile element (CE) is equal to the length of each muscle fiber. However, when the force is transmitted through the SEE when the muscle contracts and generates force, the SEE begins to stretch and the CE shortens. 
+When a muscle contracts, it shortens its length to produce force. Before being applied to the load, this force passes via the series elastic element (SEE). The SEE is in a slack or non-stretched state when a muscle is in rest and not exerting any force. Because the SEE is not applying any further tension to the muscle fibers at this time, the length of the contractile element (CE) is equal to the length of each muscle fiber. However, when the force is transmitted through the SEE when the muscle contracts and generates force, the SEE begins to stretch and the CE shortens. 
 
-In general, CE length is equal to the length of each muscle fiber when the muscle is relaxed and does not generate any force. When a force is applied, i.e., during muscle contraction, the CE shortens and the SEE stretches, enabling efficient force transmission to the load. This is why to calculate the correct length of the muscle at an initial state where the muscle is contracted, the CE value is equal to the formula below.
+In general, the CE length is equal to the length of each muscle fibre when the muscle is relaxed and does not generate any force. When a force is applied, i.e., during muscle contraction, the CE shortens and the SEE stretches, enabling efficient force transmission to the load. This is why to calculate the correct length of the muscle in an initial state where the muscle is contracted, the CE value is equal to the formula below.
 
 \begin{equation}
     LCE = length - SEEslack \label{LCE}
 \end{equation}
 
-The function below initializes the muscle values for the state correctly when knowing only the angle values for the different degrees of freedom.
+The function below initializes the muscle values for the state correctly when knowing only the angle values for the different degrees of freedom.\newpage
 
 \begin{lstlisting}[style=Matlab-editor]
 
@@ -281,7 +302,7 @@ The inputs are:
 Some optional inputs include
 \begin{itemize}
     \item M (5x1): moments applied to the thorax-humerus YZY and the elbow flexion and supination axes.
-    \item exF (2x1): external vertical force of amplitud exF(2) applied at exF(1) meters from the elbow.
+    \item exF (2x1): external vertical force of amplitude exF(2) applied at exF(1) meters from the elbow.
     \item handF (3x1): force applied to the center of mass of the hand. The positive value of handF (1) represents the lateral movement far from the thorax, the positive value of handF (2) represents the upward movement, and the positive value of handF (3) represents the posterior movement.
 \end{itemize}
 
@@ -293,16 +314,16 @@ The outputs are as follows:
 
 Optional outputs include
 \begin{itemize}
-    \item dfdx (nstates x nstates): jacobian of f with respect to x.
-    \item dfd$\dot{x}$ (nstates x nstates): jacobian of f with respect to $\dot{x}$.
-    \item dfdu (nstates x nmus): jacobian of f with respect to u.
+    \item $\frac{\partial f}{\partial x}$ (nstates x nstates): Jacobian of f with respect to x.
+    \item $\frac{\partial f}{\partial \dot{x}}$ (nstates x nstates): Jacobian of f with respect to $\dot{x}$.
+    \item $\frac{\partial f}{\partial u}$ (nstates x nmus): Jacobian of f with respect to u.
     \item qTH (3x1): angles between the thorax and humerus (YZY sequence). This angles are calculate following the standardization on \cite{ISB}
 \end{itemize}
 \begin{lstlisting}[style=Matlab-editor]
 [f, dfdx, dfdxdot, dfdu, ~,~,qTH] = das3('Dynamics',x,xdot,step_u,M,exF,handF);
 \end{lstlisting}
 
-The das3step function is used to calculate the next time step following the Rosenbrock method previously explained in Section \ref{forward}.
+The das3step function is used to calculate the next time step following the Rosenbrock method (Equation \ref{eq:rosenbrock}) previously explained in Section \ref{forward}.
 
 \begin{lstlisting}[style=Matlab-editor]
 function [x, xdot, step_u, qTH] = das3step(x, u, tstep, xdot, step_u, M, exF, handF)
@@ -317,22 +338,37 @@ function [x, xdot, step_u, qTH] = das3step(x, u, tstep, xdot, step_u, M, exF, ha
 	xdot = dx/h;
 	step_u = u;
 end
-\end{lstlisting}
+\end{lstlisting}\label{matlab:das3step}
 
 
 \subsubsection{Visualization}
 
-The model can be visualised in OpenSim as shown in the image below. 
+The model can be visualised in OpenSim as shown in the image below. However, for user-friendliness the DAS presents a function named \textit{das3stick(x,model)}. The inputs are the model state and the Matlab model structure, and it outputs a Matlab figure with a more simplified drawing of the model. 
 \begin{figure}[h]
     \centering
-    \includegraphics[width=0.7\textwidth]{Pictures/OpenSimModel.png}
+    \includegraphics[width=0.7\textwidth]{Pictures/DAS/OpenSimModel.png}
     \caption{Open Sim DAS}
     \label{fig:OpenSimDAS}
 \end{figure}
 
 \begin{lstlisting}[style=Matlab-editor]
+    das3stick(xneutral,model);
+ \end{lstlisting}
+
+ Output of the \textit{das3stick}
+
+ \begin{figure}[h]
+    \centering
+    \includegraphics[width=0.4\textwidth]{Pictures/DAS/das3stick.png}
+    \caption{Matlab Visualization Output}
+    \label{fig:das3stick}
+\end{figure}
+
+The \textit{das3stick} function utilizes the \textit{'Visualization'} functionality that outputs a 13x12 matrix $d$ that contains the orientation matrix and position vector information for each bone.
+
+\begin{lstlisting}[style=Matlab-editor]
     d = das3('Visualization',x);   
     p = d(j,1:3)';					% position vector of bone
-	R = reshape(d(j,4:12),3,3)';	% orientation matrix
+    R = reshape(d(j,4:12),3,3)';	% orientation matrix
  \end{lstlisting}
- 
+

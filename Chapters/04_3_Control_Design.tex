@@ -1,14 +1,13 @@
+Achieving reaching motions with FES has proven difficult due to complexity. The goal-directed nature of reaching motions, requires different and new simulation patterns for every reach. Many different control strategies have been proposed (summary of control strategies). To accurately control reaching motions, it is necessary to treat the arm as a complete system. 
+
+
+
 
 A more sophisticated controllers is needed for our upper extremity FES system, because unlike the cyclic movemenf ot the lower, upper-extremity tasks are goal directed. This means that the amplitude, speed adn direction of the motions change continuously, so the controller need to continuously calculate the stimulation patterns for a wide range of motions commanded by the user. \cite{CFF}. 
 % General Idea
 Veltnik and Chizeck et al. described the muscle output torque relation to the input stimulation and joint angle using a muscle model that include the muscle activation. They designed a nonlinear open-loop compensator and controlled the joint angle using a PID feedback controller. \cite{NNPID}
 
-%% Model Problems
-% 
-Model-based FES control is key in providing the required accuracy, but few approaches have transferred into clinical practice. This is due to the difficulties in obtaining an accurante model since the identification time available is restricted by the onset of fatigue and time constraints of the patient, carer, physiotherapist or enginerer. \cite{IOL}.
-Time-varying physiological effects also mean that the models must be reidentified at the start of each treatment session. 
-% Parametrization problems 
-It is difficult to establish the control parameters for these systems and new parameters must be reestablished for each subject. The parameters are not always the same even for the same subject under different circumstances. The traditional control theory, which first requests a mathematicam model for the controlled system, is not applicable. \cite{NNPID}.
+
 
 %% Control Method
 % Feedforward
@@ -36,19 +35,7 @@ The ILC structura has minimial parameters that can be tuned to compromise perfor
 ILC is applicable to systems which repeatedly track a fixed reference signal over a finite time interval, termed a trial. 
 After each trial, the system is reset to the same initial condidition, and previous trial data are used to modify the control input ot reduce the error in the subsequent trial. ILC is often applied in combination with a feedback controller to ensure disturbance rejection and baseline tracking perforamnce. All ILC systems are subject o iteration varying disturbance and modeling uncertainty. The effects of model uncerstainty results in the input-output linearization action producing a system that does not equate to G(s). 
 
-% FES deviced used
-Functional Electrical Stimulator (a DSP-based FES) was developed in our laboratory. 23,35,50Hz are available ofr the pulse frequency. 
-The pulse width ranges from 0 to 300 $\mu$s. The output current is from 0 to 100 mA. The stimulation wave can be modified into two models: single phase, and biphasic phase. \cite{NNPID}
 
 
 
-% Problems
-Referring to the past literature, no one has been able to solve the transfer functions for mucles and bone systems. We obtained better values in this experiment with continuous testing. The stability results were greatly influenced if the Kp, Ki and Kd parameters in the PID controller were adjusted. \cite{NNPID}
-
-% Muscle Selection and Modelling
-Spasticity (velocity-dependent stiffness) in stroke typically produces resistance to arm extension due to overactivity of biceps, wrists and finger flexors and loss of activity of triceps, anterior deltoid, wrist and finger extensors (reference 24). \cite{IOL}
-Triceps and anterior deltoid are hence selected for stimulation to align with the clinical need to increase muscle tone and restore motor control of weakened muscles. 
-The relationship between muscle stimulation adn subsequent movement are well explored. However, simplification opens up routes for both aprameter identification and controller derivation that have not yet been possible for more complex models. \cite{IOL}
-It is assumed that applying FES to the anterior deltoid produces a moment about an axis that is fixed with respect to the shoulder. Applying FES to the triceps produces a moment about an axis orthogonal to both the forearm and upper arm.\cite{IOL}
-
-As discussed in [26] the most prevalent form of muscle representation is the Hill-type muscle. (Explain the Hill-Type muscle)
+It is difficult to establish the control parameters for these systems and new parameters must be reestablished for each subject. The parameters are not always the same even for the same subject under different circumstances. The traditional control theory, which first requests a mathematical model for the controlled system, is not applicable. \cite{NNPID}.
