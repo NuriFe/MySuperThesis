@@ -24,7 +24,7 @@ In this project, we developed our model identification in a manner akin to the a
 
 To gather data for the models a PI controller is designed to compute the force applied at the wrist in order to hold the arm in a static position, both with and without neural excitation. This force is subsequently converted into torque using the kinematic Jacobian. The process is detailed in the following sections. 
 
- \subsubsection{Target Positions and Initial Configuration}
+ \subsection{Target Positions and Initial Configuration}
 
  In the paper \cite{QSC} the simulated experiment resembles the one performed in a real-case scenario. A total of 27 different positions were analyzed where an external robot held the wrist of the arm into the different static positions. The robot was equipped with a three-dimensional force sensor at its end-effector \cite{HSAC}. 
  
@@ -59,7 +59,7 @@ The \textbf{\textit{create\_grid()}} function generates a grid of target points 
 \end{figure}
 
 \newpage
- \subsection{PI Force Controller}
+\subsection{PI Force Controller}
 
  The goal of the static force simulation is to determine the necessary force to keep the wrist in a specific static position. It involves two distinct scenarios. Both scenarios use a PI controller to exert the required force at the wrist, using the input \textit{handF} in the \textbf{\textit{das3\_step(...)}} function (refer to Equation \ref{matlab:das3step}).
 
@@ -72,7 +72,7 @@ The \textbf{\textit{create\_grid()}} function generates a grid of target points 
 
 In the first scenario, no muscles are excited. The simulation starts from the equilibrium position and continues for 3 seconds, with a time step of 0.001 seconds. The focus is to calculate how much force is needed to apply to maintain a specific arm configuration static.
 
-n the second scenario, the simulation begins with the arm configuration that was determined after running the previous no-excitation simulation. Here, one muscle at a time is stimulated at 100\%, i.e, $u_{j}$. The index j represents the muscle, this values goes from 1 to 9. Although the muscles may deviate from the starting position, the PI controller continuously adjusts to keep the hand in its initial position. This simulation is shorter, running for 0.5 seconds, but still utilizes a time step of 0.001 seconds.
+In the second scenario, the simulation begins with the arm configuration that was determined after running the previous no-excitation simulation. Here, one muscle at a time is stimulated at 100\%, i.e, $u_{j}$. The index j represents the muscle, this values goes from 1 to 9. Although the muscles may deviate from the starting position, the PI controller continuously adjusts to keep the hand in its initial position. This simulation is shorter, running for 0.5 seconds, but still utilizes a time step of 0.001 seconds.
 
 After each time step,in both scenarios, the difference between the wrist's current position and the target is computed. This error is then multiplied by the Proportional (P) coefficient (Kp) of the PI controller. Concurrently, the accumulated error is updated and multiplied by the Integral (I) coefficient (Ki).  The sum of both the proportional and integral terms dictates the \textit{handF} for the next step. In the context of the PI controller, the Proportional segment is responsible for creating an output in direct relation to the present error, while the Integral portion systematically reduces  steady-state error by considering the history of past errors.
 
@@ -124,5 +124,83 @@ Next, the function transforms the local coordinates into global ones. By utilizi
 where $p_{rotated}$ is the rotated position vector, $R$ is the orientation matrix, $p_{local}$ is the local position vector, and $t$ is the translation vector representing the shift from the local to the global coordinate system.
 
 
+\newpage
+\subsection{Kinematic Jacobian and Torque Calculation}
 
-\subsubsection{}
+The Kinematic Jacobian is a critical part of the transformation of the recorded robot controller force to the joint torque $\tau_j$. The index j represents the muscle group being activated, when no muscle is being activated j is equal to 0.
+
+In robotics, the Jacobian matrix provides essential information about the relationship between the velocities of the joints and the end-effector of a robot manipulator. This relationship can be expressed using the equation
+
+\begin{equation}
+\dot{x} = J \cdot \dot{q}
+\end{equation}
+
+where $\dot{x}$ is the end-effector velocity and $\dot{q}$ is the joint velocity.
+
+Understanding the relationship between how the robot joint's velocities correlate to the end-effector's velocities is vital for planning trajectories in different spaces.
+
+Furthermore, the kinematic Jacobian can be use to determined the necessary forces in joint space to achieve specific forces in end-effector space. In the musculosketal system it is assumed that the 11 degrees-of-freedom have no friction at the joint. The joint torques ($ \tau \epsilon R^n$) required to bear an endpoint/hand force ($F \epsilon R^{6x1}$), are given by,
+
+\begin{equation}
+    \tau = J^T*F
+\end{equation}
+
+where the Jacobian matrix ($J \epsilon R^{6xn}$) relates the infinitesimal joint displacement $dq$ to the infinitesimal end-effector displacements $dp$. The theorem is proven using the Principle of Virtual Work \cite{ITR}.
+
+\begin{equation}
+    dq = J*dp
+\end{equation} \label{eq:displacement}
+
+This equation is applied as shown in the MATLAB code below to calculate the torque values from the mean forces previously calculate using the PI controller. 
+
+\begin{lstlisting} [style=Matlab-editor]
+[dPhand_dx, ~, ~] = handpos_jacobian(x);
+torque = dPhand_dx'*hand_F;
+\end{lstlisting}
+
+Calculating the kinematic Jacobian in robotics involves defining the structure and parameters of the robot's joints and links, often using conventions like Denavit-Hartenberg (D-H) parameters. Transformation matrices are found for each joint, and the end-effector position is obtained by multiplying these matrices.
+
+The Jacobian matrix is then constructed by differentiating the end-effector's position with respect to each joint variable, considering whether the joint is revolute or prismatic. The resulting 6×n matrix, where n is the number of joints, maps the joint velocities to the linear and angular velocities of the end-effector.
+
+Due to the complex system, to calculate the kinematic Jacobian the concept of infinitesimal displacement presented in Equation \ref{eq:displacement} is used. The function \textbf{\textit{handpos\_jacobian(x)}} (MATLAB code below) take the state and perturbs each degree of freedom by a small mount $h$. For each perturbation, the old and the new hand positions are  subtracted and divided by $h$. This describes how the changes in the degrees of freedom affect the hand´s position at that particular state. 
+
+\begin{lstlisting}[style=Matlab-editor]
+function [dPhand_dx, Phand, Phand_new] = handpos_jacobian(x)
+    dPhand_dx = zeros(3,11);
+    stick = das3('Visualization', x);
+    Phand = stick(13,1:3)';
+    h = 1e-7;
+    for i = 1:11
+        tmp = x(i);
+        x(i) = x(i) + h;
+        stick = das3('Visualization',x);
+        Phand_new = stick(13,1:3)';
+        dPhand_dx(:,i) = (Phand_new - Phand)/h;
+        x(i) = tmp;
+    end        
+end
+\end{lstlisting}
+
+The shoulder and elbow torques are computed using the transpose of the kinematic Jacobian. They are denoted by $\tau_{j}$, where $j$ symbolizes the muscle group being activated, with 0 signifying no active muscles. The torque concerning elbow pronation is disregarded as it does not influence the wrist's positions. 
+
+If no muscles are activated, the torque needed to hold the the wrist in static position is equal to,
+
+\begin{equation}
+\tau_0 = p(q)
+\end{equation}
+
+where $p(q) \epsilon  R^{4x1}$. 
+
+The torque produced by the muscle's group $j$ activations is calculating by subtracting the torques recorded when no muscles are activated and the torques recorded with muscle group $j$ active. This torque  is represented by $R(q)\alpha$ where $\alpha \epsilon R^{9x1}$ is the vector of muscle group activations and $R(q) \epsilon R^{4x9}$ is the mapping from muscle group activation to joint torque. It is assumed that the torques scales linearly with activation \cite{SPI}. 
+
+\begin{equation}
+    R_j(q) = \tau_0 - \tau_j
+\end{equation}
+
+Each column of $R(q)$ describes the torque generated by each muscle group at full activation. It is assumed that individual muscle torques add linearly without interference from adjacent muscles or connective tissue interactions. 
+
+
+
+
+
+\subsection{Gaussian Process Regression}
