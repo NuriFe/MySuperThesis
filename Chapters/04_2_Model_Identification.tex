@@ -151,9 +151,9 @@ Furthermore, the kinematic Jacobian can be use to determined the necessary force
 
 where the Jacobian matrix ($J \epsilon R^{6xn}$) relates the infinitesimal joint displacement $dq$ to the infinitesimal end-effector displacements $dp$. The theorem is proven using the Principle of Virtual Work \cite{ITR}.
 
-\begin{equation}
+\begin{equation}\label{eq:displacement}
     dq = J*dp
-\end{equation} \label{eq:displacement}
+\end{equation} 
 
 Calculating the kinematic Jacobian in robotics involves defining the structure and parameters of the robot's joints and links, often using conventions like Denavit-Hartenberg (D-H) parameters. Transformation matrices are found for each joint, and the end-effector position is obtained by multiplying these matrices.
 
@@ -284,7 +284,7 @@ A loop iterates through each muscle, fexecuting the following steps:
 
 For the \textbf{parametricfunctionReach}, Bayesian Regression (\cite{BLM}) is used to calculate the mean ($\mu$) and the covariance ($\Sigma$) for the prior parameter distribution for the semiparametric model. Bayessian Regression is a statistical method that estimates the unknown parameters of a linear model by considering them as random variables with prior distributions. It takes into account prior knowledge of the parameters to provide a more precise understanding.
 
-In the following sections, the code and the corresponding mathematical implications will be detailed.  Refer to figure \ref{fig:ModelComputationGPR} for a detailed flow diagram.
+In the following paragraphs, the code and the corresponding mathematical implications will be detailed.  Refer to figure \ref{fig:ModelComputationGPR} for a detailed flow diagram.
 
 First the basis function or design matrix ,$\Phi$, is evaluated for each arm configuration torque. It is used to represent the relationship between the input variables and the target outputs in a compact and mathematical form. 
 
@@ -331,4 +331,64 @@ In summary, the prior mean \( \mu_0 \) and covariance \( \Sigma_0 \) encapsulate
 
 \textbf{\textit{SEMI-PARAMETRIC FUNCTION}}
 
-The basis 
+In the following paragraphs, the code and the corresponding mathematical implications will be detailed.  Refer to figure \ref{fig:ModelComputationGPR} for a detailed flow diagram.
+
+First the basis function or design matrix ,$\Phi$, is evaluated for each arm configuration torque. It is used to represent the relationship between the input variables and the target outputs in a compact and mathematical form. 
+
+A Gaussian Process is fully specified by the \textbf{mean function} and a \textbf{covariance function}. Following \cite{SPI}, the mean function is the parametric model and the covariance function is the sum of squared-exponential covariance (Equation \ref{seard})  function and a term that takes into account the uncertainty in the parameters of the parametric model. 
+\begin{equation}
+\begin{aligned}
+    \mu = \Phi*\beta \\
+    \Sigma = k(x,x')  + \Sigma_{uncertainty}
+\end{aligned}
+\end{equation}
+
+\begin{equation}\label{seard}
+    k(x,x') = \sigma^2*\exp{-\frac{(x-x')^2}{2l^2}}
+\end{equation}
+
+The length scale ($l$) were chosen a priori to be small which means that the correlation between observations drops off quickly as their separation increases. Leading to a more flexible model. 
+
+The vertical scale ($\sigma^2$) controls the overall variance of the function values. Higher values means more significant variation from one point to another, allowing GP to capture strong fluctuations. 
+
+Moreover the likelihood function chosen is the Gaussian Likelihood. The likelihood describes the noise model, in this case assuming normally distributed noise. 
+
+Next, hyper-parameters GPR are defined. Hyperparameters are essential parameters that define how the model behaves. There are three main hyperparameters:
+
+\begin{itemize}
+
+    \item Mean. The mean previously calculated in the parametric function.
+    \item Covariance. It includes, the length scale parameters, the vertical scale hyperparameters and the covariance previously calculated in the parametric function. 
+
+    \item Likelihood function. It is set to be the $log(10)$ which suggests a specific setting on the noise variance in the Gaussian likelihood. 
+
+\end{itemize}
+
+The hyperparameters are optimized to the GP model to best explain the training data. The optimized hyperparameters are used to make predictions using Gaussian Process model. All Gaussian process computations are made using the GPML toolbox for MATLAB (\cite{GPML}).
+
+\begin{lstlisting} [style=Matlab-editor]
+covGP = {@covSEard};
+likfunc = @likGauss;
+covfunc1 = {'covSum',{covGP,covUNCERT}};
+
+% optimize the hyperparameters and then make predictions with the optimized
+% parameters
+[hypOPT fX iter] = minimize(hyp1, @gp, -100, @infExact, meanfunc1, covfunc1, likfunc, trainingInputs, trainingOutputs(:,1));
+[meantest covtest] = gp(hypOPT, @infExact, meanfunc1, covfunc1, likfunc, trainingInputs, trainingOutputs(:,1), testInputs);
+%prediction: [ymu ys2 fmu fs2   ] = gp(hyp, inf, mean, cov, lik, x, y, xs);
+\end{lstlisting}
+
+The prediction outputs are $y_{mu}$ (meantest) for test output mean and $y_{s2}$ (covtest) for test output covariance. 
+
+The output of the semiparametric model are the \textbf{hyperparameters} that will be used later for future predictions.
+
+\newpage
+\begin{landscape} % Start landscape page
+  \begin{figure}[h!]
+    \centering
+    \includegraphics[width=1.5\textwidth]{Pictures/Model/computemodel.png} % Replace "filename.jpg" with the name of your image file
+    \caption{Flow Diagram for Model Computation of Semi-Parametric GPR} % Optional caption
+    \label{fig:ModelComputationGPR} % Optional label for referencing
+  \end{figure}
+\end{landscape} % End landscape page
+
