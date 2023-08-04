@@ -120,3 +120,11 @@ The difference between the torques recorded with no muscles active and the torqu
 
 The data for the set of 64 training positions is used to train semiparametric GPR models which are used to predict $\tau_j$ for a given configuration. The models are used to determine the static arm torques $p(q)$ and the muscle force mapping $R(q)$ for a desired arm configuration.
 
+\subsubsection{GPR}
+
+The data for the set of 64 training positions is used to train semiparametric GPR models which are used to predict $\tau_j$ for a given configuration. The models are used to determine the static arm torques $p(q)$ and the muscle force mapping $R(q)$ for a desired arm configuration.
+
+The input to the GPR model are the arm configuration and the output are the torques generated. One GPR model was used for the inverse statics and the other one for the muscle torque production. 
+Relative to a parametric model, GPR does not have requirement on identifiability. Compared to other nonparametric methods, such as ANN, GPR is chosen due to the automated nature of determined the complexity of th emodel by maximizing the marginal likelihood (see \cite{SPI} for details on the quality of the model). The hyper-parameters for each model were selected by maximing the marginal likelihood. The kerned function used in the GPR was the squared exponential function using the distance metric for rigid bodies. 
+
+The method uses GPR to predict shoulder and elbow torques given the shoulder and elbow joint positions and velocities and the electrical stimulation inputs to muscles. There was a comparison of accuracy between nonparametric, semiparametric and parametric model types. The most accurate of the three model types is a semiparametric GP model that combines the flexibility if a black box function approximation with the generalization power of a parametrized model. \cite{SPI}. The semiparametric model predicted torques during stimulation of multiple muscles with error less than 20\% of the total muscle torque and passive torque neede to drive the arm. The identified model allows to define an arbitrary reaching trajectory and approximately determinet the muscle stimulation required to drive the arm along the trajectory. 
