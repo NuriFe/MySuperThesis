@@ -1,6 +1,6 @@
 \newpage
-\section{Model Identification}
-
+\chapter{Model Design and Development}
+\subsubsection{Background}
 Model-based methods for controlling the arm as a unified system and determining real-world arm dynamics have been suggested in earlier studies as a solution for precise control. For instance, physics-based models have demonstrated some success in controlling two muscles for rehabilitation \cite{IOL}. However, a major challenge lies in the identification of the physical parameters of the entire arm, which demands a significant amount of data.
 
 To address this issue, black-box model-based control methods have been developed. An example of these methods successfully utilized an artificial neural network (ANN) to create a map of task space configuration in relation to the forces that muscles can generate, thereby achieving control of planar arm tasks \cite{FC2D}. Moreover, Lyapunov-based methods have been employed to create a data-driven Deep Neural Network (DNN) based adaptive control method used for Functional Electrical Stimulation (FES)-induced leg extension rehabilitation \cite{CLDNN}.
@@ -13,20 +13,36 @@ Previous work has demonstrated that a semi-parametric Gaussian Process Regressio
 
 In this project, we developed our model identification in a manner akin to the approach outlined in the paper \cite{QSC}, as it was found to be successful in circumventing the challenges intrinsic to parametric modeling. The GPR model provides a non-parametric, data-driven approach, allowing for an analytical representation of complex patterns without necessitating rigid assumptions regarding the model's structure.
 
-\subsection{Design}
+\newpage
+\subsubsection{Design}
 
  A two part modeled is developed consisting of:
 
  \begin{itemize}
      \item \textbf{Inverse Statics}. It calculates the joint torque needed to hold a desired static arm configuration.
-     \item \textbf{Muscle Torque Production}. It maps the arm configuration with the muscle activation to the joint torque produced by this activation and the specific arm configuration. 
+     \item \textbf{Muscle Torque Production}. It maps the arm configuration with the muscle activation to the joint torque produced. 
  \end{itemize}
 
-To gather data for the models a PI controller is designed to compute the force applied at the wrist in order to hold the arm in a static position, both with and without neural excitation. This force is subsequently converted into torque using the kinematic Jacobian. The process is detailed in the following sections. 
+To gather data for the models a PI controller is designed to compute the force applied at the wrist in order to hold the arm in a static position, both with and without neural excitation. This force is subsequently converted into torque using the kinematic Jacobian. The process is detailed in sections \ref{sec:tp}, \ref{sec:PI} and \ref{sec:torque} and a flow diagram is shown in Figure \ref{fig:datacreation}. 
 
-Finally, the collected data is used to train the two semiparametric GPR models which are used to predict $\tau_j$ for a given configuration. 
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=1\textwidth]{Pictures/Model/DataCreation.jpg}
+    \caption{Data Creation Flow Diagram}
+    \label{fig:datacreation}
+\end{figure}
 
- \subsection{Target Positions and Initial Configuration}
+
+Finally, the collected data is used to train the two semiparametric GPR models which are used to predict $\tau_j$ for a given configuration. The process is detailed in section \ref{sec:spgp} and a flow diagram is shown in Figure \ref{fig:modelcreation}.
+
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=1\textwidth]{Pictures/Model/ModelCreation.jpg}
+    \caption{Model Creation Flow Diagram}
+    \label{fig:modelcreation}
+\end{figure}
+
+ \section{Target Positions and Initial Configuration} \label{sec:tp}
 
  In the paper \cite{QSC} the simulated experiment resembles the one performed in a real-case scenario. A total of 27 different positions were analyzed where an external robot held the wrist of the arm into the different static positions. The robot was equipped with a three-dimensional force sensor at its end-effector \cite{HSAC}. 
  
@@ -61,9 +77,9 @@ The \textbf{\textit{create\_grid()}} function generates a grid of target points 
 \end{figure}
 
 \newpage
-\subsection{PI Force Controller}
+\section{PI Force Controller}\label{sec:PI}
 
- The goal of the static force simulation is to determine the necessary force to keep the wrist in a specific static position. It involves two distinct scenarios. Both scenarios use a PI controller to exert the required force at the wrist, using the input \textit{handF} in the \textbf{\textit{das3\_step(...)}} function (refer to Equation \ref{matlab:das3step}).
+ The goal of the static force simulation is to determine the necessary force to keep the wrist in a specific static position. It involves two distinct scenarios. Both scenarios use a PI controller to exert the required force at the wrist, using the input \textit{handF} in the \textbf{\textit{das3\_step(...)}} function.
 
 \begin{figure}[h!]
     \centering
@@ -76,7 +92,16 @@ In the first scenario, no muscles are excited. The simulation starts from the eq
 
 In the second scenario, the simulation begins with the arm configuration that was determined after running the previous no-excitation simulation. Here, one muscle at a time is stimulated at 100\%, i.e, $u_{j}$. The index j represents the muscle, this values goes from 1 to 9. Although the muscles may deviate from the starting position, the PI controller continuously adjusts to keep the hand in its initial position. This simulation is shorter, running for 0.5 seconds, but still utilizes a time step of 0.001 seconds.
 
-After each time step,in both scenarios, the difference between the wrist's current position and the target is computed. This error is then multiplied by the Proportional (P) coefficient (Kp) of the PI controller. Concurrently, the accumulated error is updated and multiplied by the Integral (I) coefficient (Ki).  The sum of both the proportional and integral terms dictates the \textit{handF} for the next step. In the context of the PI controller, the Proportional segment is responsible for creating an output in direct relation to the present error, while the Integral portion systematically reduces  steady-state error by considering the history of past errors.
+After each time step,in both scenarios, the difference between the wrist's current position and the target is computed. This error is then multiplied by the Proportional (P) coefficient (Kp) of the PI controller. Concurrently, the accumulated error is updated and multiplied by the Integral (I) coefficient (Ki).  The sum of both the proportional and integral terms dictates the \textit{handF} for the next step (Equation \ref{eq:PID}). In the context of the PI controller, the proportional segment is responsible for creating an output in direct relation to the present error, while the integral portion systematically reduces  steady-state error by considering the history of past errors.
+
+\begin{equation} \label{eq:PID}
+\begin{aligned}
+        error_{pos} = hand_{goal} - hand_{current}; \\
+        error_{i} = error_i + error_{pos}*t_{step}; \\
+        hand_F = K_p*error_{pos} + K_i*error_i; \\
+\end{aligned}
+\end{equation}
+where $error_{pos}$ is the difference between the target goal and the current position, the $error_i$ represent the cumulative error from every time step and $hand_F$ is the calculated force that will be exerted on the hand to achieve the goal position.
 
 The specific values for T, $t_{step}$, PI parameters for both scenarios are detailed in Table \ref{tab:PI}.
 
@@ -98,7 +123,6 @@ The force necessary to reach each point is calculated by averaging the last 10\%
     \label{tab:PI}
 \end{table}
 
-\newpage
 Below is a MATLAB code snippet that demonstrates the calculation of PI force, inclusive of the step simulation.
 
 \begin{lstlisting}[style=Matlab-editor]
@@ -127,9 +151,9 @@ where $p_{rotated}$ is the rotated position vector, $R$ is the orientation matri
 
 
 \newpage
-\subsection{Kinematic Jacobian and Torque Calculation}
+\section{Kinematic Jacobian and Torque Calculation} \label{sec:torque}
 
-\subsubsection{Background} 
+\subsection{Background} 
 
 The Kinematic Jacobian is a critical part of the transformation of the recorded robot controller force to the joint torque $\tau_j$. The index j represents the muscle group being activated, when no muscle is being activated j is equal to 0.
 
@@ -159,7 +183,7 @@ Calculating the kinematic Jacobian in robotics involves defining the structure a
 
 The Jacobian matrix is then constructed by differentiating the end-effector's position with respect to each joint variable, considering whether the joint is revolute or prismatic. The resulting 6×n matrix, where n is the number of joints, maps the joint velocities to the linear and angular velocities of the end-effector.
 
-\subsubsection{Implementation}
+\subsection{Implementation}
 The equation \ref{eq:displacement} is applied as shown in the MATLAB code below to calculate the torque values from the mean forces previously calculate using the PI controller. 
 
 \begin{lstlisting} [style=Matlab-editor]
@@ -208,9 +232,9 @@ Each column of $R(q)$ describes the torque generated by each muscle group at ful
 
 
 \newpage
-\subsection{Model Creation: Semi-Parametric Gaussian Process Regression}
+\section{Model Creation: Semi-Parametric Gaussian Process Regression} \label{sec:spgp}
 
-\subsubsection{Comparative Analysis of Model Types}
+\subsection{Comparative Analysis of Model Types}
 
 A comparative accuracy analysis was conducted between non-parametric, semiparametric, and parametric models in \cite{SPI}. The semiparametric GP model resulted as the most accurate, combining the flexibility of a black-box function approximation with the generalization strength of a parameterized model, as indicated in \cite{SPI}. This semiparametric model estimated torques during muscle stimulation with less than 20\% error relative to the total muscle torque and passive torque required to move the arm. 
 
@@ -234,7 +258,7 @@ Details on the quality of the model can be found in \cite{SPI}. A summary of the
 \label{table:comparison}
 \end{table}
 
-\subsubsection{Background}
+\subsection{Background}
 
 Gaussian Process Regression (GPR) is a powerful and flexible tool used in machine learning for fitting a function to data. It is rooted in the mathematical foundation of Multivariate Gaussian Distributions, where each random variable is distributed normally, and their joint distribution is also Gaussian. GPR can be expressed as 
 \begin{equation}
@@ -259,7 +283,7 @@ In summary, GPR operates on the foundational principles of Bayesian inference to
 
 
 
-\subsubsection{Implementation}
+\subsection{Implementation}
 
 Based on the results of the aforementioned study, the data for the set of 64 training positions is used to train semiparametric GPR models which are used to predict $\tau_j$ for a given configuration. The models are used to determine the static arm torques $p(q)$ and the muscle force mapping $R(q)$ for a desired arm configuration.
 The kernel function used in the GPR was the squared exponential function using the distance metric for rigid bodies. 
