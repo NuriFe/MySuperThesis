@@ -1,23 +1,6 @@
 \chapter{Control Design and Development}
 
-\subsubsection{Background}
-The task of control design for Functional Electrical Stimulation (FES)-enabled reaching motions in the upper extremities is challenging. The difficulties stem from the goal-directed character of reaching motions, which demand unique simulation patterns for each reach, in contrast to the cyclic movements of the lower extremities. This is because tasks involving the upper extremities are goal-directed, which means that the amplitude, speed, and direction of the motions are always changing. Therefore, a more sophisticated controller is needed, one that can continuously calculate the stimulation patterns for a range of user-commanded motions. \cite{CFF}.
 
-Many different control strategies have been proposed to accurately treat the arm as a complete system, and can be broadly classified into feedforward, feedback, and combined control methods.
-
-\textbf{Feedforward Control:} This approach is often used in clinical practice and relies solely on user command without considering system performance into account (13, 15). A drawback is that it cannot be adjusted if the actual movement differs from the desired movement, despite the fact that it is favorable because sensors are not needed to measure the system output.  \cite{CFF}.
-
-\textbf{Feedback Control:} Feedback control uses sensed information of the current output of the system to correct for deviations. It can make up for fatigue and disturbances. It enables optimum tracking performance. However, the system's response time have some inherent delays that could be problematic, especially for fast actions. \cite{CFF}.
-
-\textbf{Combined Feedforward and Feedback Control:} Some FES system designs have opted for a feedforward and feedback control combination producing excellent results. Methods like training an Artificial Neural Network (ANN) with time-delayed inputs have been used for the feedforward part, which is often an inverse-dynamic model.
-
-\textbf{Neural Network Control:} Another strategy is to create a non-modeling control mechanism, such as the neural network control theory.In the research \cite{NNPID}, back-propagation is used by the three-level network structure to control the stimulation current. The neural network is trained to detect input/output relationships with the least amount of error, and the PID controller component fine-tunes the current. They were able to successfully design the correct input of electrical stimulating current signals for the patient's foot and establish relationships between stimulating current and ankle joint angle.
-
-\textbf{Iterative Learning Control (ILC):} The recurring aspect of the rehabilitation process is taken advantage of by the innovative approach known as ILC. Patients repeatedly attempt the same task, and ILC gradually improves accuracy by leveraging information from earlier attempts to modify the FES for the subsequent execution. In \cite{IOL}, an input-output linearization (IOL) structure was developed. It presented few parameters and was shown to be robust.  ILC systems are best used for systems that repeatedly track a fixed reference signal over a limited time period since they are susceptible to disruptions and modeling errors.
-
-It is challenging to establish control parameters for highly dynamical and complex systems, such as upper-body extremity,since new parameters must be redefined for every subject and might not hold true in all situations. Classical control theory—which calls for a mathematical model of the controlled system—is ineffective.
-
-In conclusion, the design of control for FES systems is intricate and demands creative solutions to assure optimal operation.
 
 \section{Overall Design}
 
