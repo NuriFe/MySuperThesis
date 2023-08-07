@@ -23,11 +23,16 @@ To assure the PID Controller's performance, an exhaustive tuning was undertaken 
 With this tuned controller, a grid, encompassing 960 points, was generated using the \textbf{create\_grid} function (refer to Section \ref{sec:tp}). Each point's arm configuration was calculated using the PI force controller, as detailed in Section \ref{sec:PI}. The feasibility of a point was determined by the ability of the controller to sustain for 1 second its position with an error margin of 0.1. For clarification purposes, the start and the goal position of the controller are set to be the same. 
 For seamless and accurate operations, a time step (\(t_{step}\)) of 0.001 is employed. To improve the controller's stability an auxiliary force is exerted on the arm in the first 100 steps. This eliminates potential oscillations and assures a better control performance.
 
-The figures below present the generated grid. Points in red signify positions where the controller failed to find the neural excitation needed to sustain for 1 second. In contrast, green points indicate successful stabilization by the controller. These feasible points will be used in the following section (Section \ref{sec:path}) to generate paths for the arm to follow. 
+The figures (gif if opened in Adobe Acrobat) below present the generated grid. Points in red signify positions where the controller failed to find the neural excitation needed to sustain for 1 second. In contrast, green points indicate successful stabilization by the controller. These feasible points will be used in the following section (Section \ref{sec:path}) to generate paths for the arm to follow. 
 
-\subsection{PID Tuning}
-\newpage
-\section{Path Following Quasi-Static Control Development } \label{sec:path}
+
+\begin{figure}[ht]
+    \centering
+    \animategraphics[autoplay,loop,width=0.8\textwidth]{12}{Pictures/Controller/gif/feasiblepoints-}{0}{149}
+    \caption{Feasible points. Open in Adobe Acrobat to see gif movement.}
+    
+\end{figure}
+\section{Path Following Quasi-Static Controller Development } \label{sec:path}
 
 The goal is to develop a controller that allows the dynamic arm  to navigate or follow a specific trajectory or path. This will simulate the rehabilitation reaching task to be performed. For more information on rehabilitation tasks refer back to Section \ref{rehabilitation_task}. Quasi-static control allows to design a safe, precise and movement-controlled therapy, as it focuses on slow, steady and controlled operations. It facilitates the decomposition of the entire reaching path trajectory into smaller static positions. Dividing the task into smaller steps offers some benefits under the rehabilitation lens:
 \begin{itemize}
@@ -82,15 +87,14 @@ This process is repeated until the path reaches the desired end position. As a r
 
 \begin{figure}[h!]
     \centering
-    \includegraphics[width=1.1\textwidth]{Pictures/Controller/findpath.jpg}
+    \includegraphics[width=1\textwidth]{Pictures/Controller/findpath.jpg}
     \caption{Flow Diagram Find Path Function }
     \label{fig:FindPath}
 \end{figure}
 
 
 
-\newpage
-\section{EMG-Influenced Control Development}
+\section{EMG-Influenced Controller Development}
 
 \newpage
 \begin{landscape} % Start landscape page

@@ -35,3 +35,8 @@
 \usepackage{multirow}
 \usepackage{makecell}
 \usepackage{pdflscape}
+\usepackage{graphicx, animate}
+
+\DeclareGraphicsRule{.gif}{png}{.png}{%
+  \noexpand\epstopdfcall{convert #1 \noexpand\OutputFile}%
+}
