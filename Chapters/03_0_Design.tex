@@ -1,8 +1,27 @@
 \chapter{Design}
 The overall design to achieve the goal on section XX is presented in this chapter. The prerequisites and criteria are firstly examined to replicate the rehabilitation scenario.
 
-\section{Block Diagram}
-\section{Criteria Analysis}
+\setlength{\tabcolsep}{18pt}
+\renewcommand{\arraystretch}{1.5}
+\begin{table}[ht]
+\caption{Comparison of Two Simulation Studies}
+\label{tab:Comparison}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{|l|l|}
+\hline
+\multicolumn{1}{|c|}{\textbf{\begin{tabular}[c]{@{}c@{}}Developing a Quasi-Static Controller\\  for Paralyzed Human Arm\end{tabular}}} &
+  \multicolumn{1}{c|}{\textbf{\begin{tabular}[c]{@{}c@{}}Developing an EMG-Based Quasi-Static\\  Controller for Stroke Reaching Rehabilitation\end{tabular}}} \\ \hline
+Focused for spinal cord injury & Focused on stroke survivors                                                                             \\ \hline
+Controlling 9 muscles          & Controlling 2 muscles                                                                                   \\ \hline
+Surgical FES at 13Hz           & External FES stimulation                                                                                \\ \hline
+Exoskeleton Arm Support        & \begin{tabular}[c]{@{}l@{}}No Exoskeleton Arm\\  (enough mobility provided by the patient)\end{tabular} \\ \hline
+Wrist Position Control         & EMG and Wrist Position Control                                                                          \\ \hline
+Multiple movements in the workspace &
+  \begin{tabular}[c]{@{}l@{}}Same target, different initial positions. \\ Repetition of movement for rehabilitation purposes.\end{tabular} \\ \hline
+\end{tabular}%
+}
+\end{table}
+\section{Design Criteria}
 
 To pinpoint the crucial factors that would direct our choice of design and tools, a thorough criterion analysis was carried out. The following important standards came to be recognized as essential elements in the search for an efficient simulation solution:
 
@@ -19,3 +38,5 @@ To pinpoint the crucial factors that would direct our choice of design and tools
 
 
 
+\section{Block Diagram}
+\input{Chapters/03_1_Simulation Experiment Setup}
