@@ -41,7 +41,7 @@ For a clearer understanding of the quasi-static control designed, refer to the f
 \begin{enumerate}
     \item \textbf{Selection of Target Position}: From a set of feasible points, a target position is chosen. This serves as the end-point or goal for the system.
     
-    \item \textbf{Path Discovery via the 'find path' Function}: The selected target position is input into the 'find path' function. This function works by first identifying the nearest neighbors from the feasible points workspace. Among the first 200 nearest neighbors of the starting point, it selects one that:
+    \item \textbf{Path Discovery via the 'find path' Function} (see Section \ref{findpath}, for a more detailed explanation of the function): The selected target position is input into the 'find path' function. This function works by first identifying the nearest neighbors from the feasible points workspace. Among the first 200 nearest neighbors of the starting point, it selects one that:
     \begin{itemize}
         \item Is at a distance \(d = 4\) units away from the starting point. This distance recommendation comes from the paper \cite{QSC}.
         \item Lies in the direction of the end-point or target position.
@@ -62,13 +62,32 @@ For a clearer understanding of the quasi-static control designed, refer to the f
 In conclusion, the proposed controller is designed to guide a dynamic arm through specified trajectories, mimicking the rehabilitation reaching tasks outlined in Section \ref{rehabilitation_task}. Quasi-static control is used to emphasize safety, precision and control, three key components for a successful rehabilitation. Key components of the control system presented include a \textbf{\textit{find\_path} }function that uses KNN to find the best positions that will define the path to the desired target. Moreover the control loop, adapted from the one on Section \ref{NeuralController}, operated with timed neural excitation (controlled by the variable $frequency$) and position switching to guide the arm accurately along the predefined path (controlled by variable $time_{switch}$).
 
 
-
 \begin{figure}[h!]
     \centering
     \includegraphics[width=1\textwidth]{Pictures/Controller/Quasi-Static Path Controller.jpg}
     \caption{Flow Diagram Quasi-Static Path Controller }
     \label{fig:PathController}
 \end{figure}
+
+\subsection{Find Path Function} \label{findpath}
+
+The \texttt{FindPath} function calculates a path between two positions within a predefined set of feasible wrist points. The function takes three input parameters: $d$,  $startPos$ and $endPos$. 
+
+The code will load a file that contains all the feasible wrists positions to calculate a path from. Section \ref{NeuralController} explains how the feasible positions are determined. 
+
+Once all the initial parameters are set, the function begins to construct the path. K-Nearest Neighbours is the supervised machine learning algorithm used to calculate the most optimal path. The Matlab function \textbf{knnsearch} is used to seek the predefined number of nearest neighbours to the current position within the feasible positions. Then, another \textbf{knnsearch} is performed to identify which one of the closest neighbours is closer to the end position. The selected point should be within a distance $d$ from the current position but closet to the end position.
+
+This process is repeated until the path reaches the desired end position. As a result, find path outputs an array called path will all the positions.
+
+
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=1.1\textwidth]{Pictures/Controller/findpath.jpg}
+    \caption{Flow Diagram Find Path Function }
+    \label{fig:FindPath}
+\end{figure}
+
+
 
 \newpage
 \section{EMG-Influenced Control Development}
