@@ -18,8 +18,69 @@ The Dynamic Arm Simulator will then determine the arm's dynamics in accordance w
     \label{fig:BDC}
 \end{figure}
 
-To assure the PID Controller's performance, an exhaustive tuning was undertaken across 20 different positions, concluding in values of \(K_p = 300\) and \(K_i = 100\). 
+\subsubsection{PD-Tuning}
+To assure the PID Controller's performance, an exhaustive hand-tuning was undertaken across 20 different positions, concluding in values of \(K_p = 300\) and \(K_i = 100\). \(K_d = 0\) resulting in only a PD. 
 
+\subsection{Predicting Static Torque}
+static_torque = predict_static_torque(desired_arm_config)';
+desired_torque = torque_feedback+static_torque;
+TotalTorque(i,:)=desired_torque;
+if mod(i,10)==0
+    alpha0 = compute_neural_excitation(desired_arm_config, ...
+        desired_torque,alpha0);
+    for m=1:8
+        mus=whichMuscles(m);
+        u(mus)=alpha0(m)*1;
+    end            
+end
+
+\subsection{Predicting Muscle Excitations}\label{computemuscleexcitation}
+
+In muscle-driven systems, accurately determining muscle activation patterns is crucial for understanding force generation. The provided functions aim to compute optimal muscle activations under given constraints using the penalty method and a quasi-Newton optimization approach. This method is inspired by \cite{QSC}.
+
+The objective is to compute the muscle activation \texttt{act} for given muscle-torque relationships \texttt{M}, desired torques \texttt{tau}, and initial guesses for activations \texttt{alpha0}.
+
+The muscle-torque relationships \texttt{M} the Muscle Torque Production model hyperparameters calculated following the steps explain in Section \ref{sec:model}. This outputs a matrix each column represents the torque about the shoulder elevation plane, shoulder elevation, shoulder rotation adn elbow flexion produced by each muscle group. 
+
+\subsection{Methodology}
+\begin{description}
+    \item[Objective:] Solve the equation \( M \cdot \alpha = \tau \) for the muscle activations \( \alpha \).
+    \item[Broyden's Quasi-Newton Method:] This iterative optimization technique is employed to approximate the solution of the equation. It starts with an initial guess and updates it based on a Broyden approximation to the inverse Jacobian matrix.
+\end{description}
+
+\subsection{Output Constraints}
+Ensure activations are non-negative and normalized such that the maximum activation does not exceed 1.
+
+\section{Armijo Rule: \texttt{armijo}}
+
+\subsection{Overview}
+Determines the optimal step size (or learning rate) during iterations, ensuring a sufficient decrease in the function value.
+
+\subsection{Methodology}
+Using a backtracking approach, the step size \texttt{alpha1} is repeatedly halved until the sufficient descent condition is met.
+
+\section{Penalty Function: \texttt{penaltyFunc}}
+
+\subsection{Overview}
+Imposes penalties on undesired muscle activations, such as negative values or values greater than one.
+
+\subsection{Methodology}
+\begin{description}
+    \item[Objective Function:] Consists of three main components:
+    \begin{enumerate}
+        \item Quadratic norm of activations.
+        \item Quadratic difference between desired and actual torques scaled by a factor \( c \).
+        \item Penalty \( K \) for activations outside the [0,1] range scaled by a factor \( c2 \).
+    \end{enumerate}
+    \item[Gradient Computation:] Gradient of the objective function w.r.t. activations.
+\end{description}
+
+\section{Conclusion}
+
+The \texttt{computeActivation\_Nuri} function, supported by the Armijo rule and a penalty-based approach, effectively computes the muscle activations while ensuring feasible values. By employing the quasi-Newton method, the function efficiently converges to the optimal solution, providing a robust mechanism for muscle-torque simulations in biomechanical systems.
+            
+
+\subsection{Feasible Points}
 With this tuned controller, a grid, encompassing 960 points, was generated using the \textbf{create\_grid} function (refer to Section \ref{sec:tp}). Each point's arm configuration was calculated using the PI force controller, as detailed in Section \ref{sec:PI}. The feasibility of a point was determined by the ability of the controller to sustain for 1 second its position with an error margin of 0.1. For clarification purposes, the start and the goal position of the controller are set to be the same. 
 For seamless and accurate operations, a time step (\(t_{step}\)) of 0.001 is employed. To improve the controller's stability an auxiliary force is exerted on the arm in the first 100 steps. This eliminates potential oscillations and assures a better control performance.
 
@@ -93,8 +154,37 @@ This process is repeated until the path reaches the desired end position. As a r
 \end{figure}
 
 
-
+\newpage
 \section{EMG-Influenced Controller Development}
+
+Building on top of the controllers previously designed and discussed in this section, we further extend our investigation into the intricate challenges faced by stroke patients. An after-math of stroke is the muscular imbalances, most specifically muscle spasticity, which refers to muscle stiffness that influences movement and speed. As a result, they present difficulty extending the arm. The biceps tend to be over-activated and the triceps and anterior deltoid under-activated \cite{IOL}. To counteract these muscular imbalances, this controller has being design to simulate an effective and targeted electric stimulation. 
+
+Two key additions are included in the following controller design:
+
+\begin{enumerate}
+    \item a component that emulates the over activity of the biceps post-stroke 
+    \item the addition of FES to activate the triceps
+\end{enumerate}
+
+A complete flow diagram is portrayed on Figure \ref{fig:FESController}
+
+\subsection{Emulating Biceps Over-Activity}
+
+The code segment initiates by calculating muscle activation levels using the \textbf{\textit{computeActivations}} function, which factors in muscle force models and desired torques  (refer to Section \ref{NeuralController}). Then, it proceeds to iterate through the set of  muscles. When the loop reaches the fifth muscle, the biceps, the activation level of the biceps is modulated by a factor termed \textbf{\textit{stroke}}, representing the over-activity induced due to the stroke condition. This modulation is subsequently bounded: if the resultant activation surpasses a threshold of 1, it is capped at this upper limit. In scenarios where the activation is null and the stroke factor exceeds 1, a minimal activation level of 0.3 is set to ensure a base activation. For each iteration, the modified activation values are assigned to the corresponding muscle index in the control input vector u. It is important to highlight that the values are only updated with respect to the FES frequency (concept explained in Section \ref{sec:path}).
+
+\subsection{FES Stimulator for the Triceps}
+
+Considering the biomechanical implications, this project focuses on applying the Functional Electrical Stimulation the triceps. The control examines the triceps activation levels. This information comes from the Dynamic Arm Simulator and in a real case scenario it will come from EMG sensors situated in the triceps of the human. 
+
+If no activation is detected, a default minimal value is assigned. However, in cases with existing activation, a sigmoid-based control system is adopted. 
+\begin{equation}
+    \sigma(z) = \frac{1}{1 + e^{-z}}
+\end{equation}
+
+This methods adapts the gain in a smooth manner between predefined boundaries, allowing for a nuanced control response that remains sensitive to the velocity-driven nature of spasticity.
+
+For correct simulation it is ensured that the triceps activation remains bounded between [0.2, 1]. 
+
 
 \newpage
 \begin{landscape} % Start landscape page
@@ -106,3 +196,4 @@ This process is repeated until the path reaches the desired end position. As a r
   \end{figure}
 \end{landscape} % End landscape page
 
+\subsection{P Controller Tuning: Simulated Annealing}

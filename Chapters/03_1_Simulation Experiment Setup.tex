@@ -12,16 +12,3 @@ The pulse width ranges from 0 to 300 $\mu$s. The output current is from 0 to 100
 
 
 
-% Problems
-Referring to the past literature, no one has been able to solve the transfer functions for mucles and bone systems. We obtained better values in this experiment with continuous testing. The stability results were greatly influenced if the Kp, Ki and Kd parameters in the PID controller were adjusted. \cite{NNPID}
-
-To control the arm as a complete system and determine the real-world arm dynamics necessary for accurate control, model-based methods have been proposed in previous works. Physics-based models have shown some success in controlling two muscles for rehabilitation \cite{IOL}. However identifying the physical parameters of the whole arm requires significant amount of data. Black-box model-based control methods have been developes to solve this issue. One such methods achievec control of planar arm tasks using an artificial neural network to produce a map of the task space configuration to the forces the muscles can produce \cite{FC2D}. Other studies use Lyapunov-based methods to develop a data-drived Deep Neural Network (DNN) based adaptive control method for FES-induced leg extension rehabiliation. \cite{CLDNN}
-
-%% Model Problems
-% 
-Model-based FES control is key in providing the required accuracy, but few approaches have transferred into clinical practice. This is due to the difficulties in obtaining an accurante model since the identification time available is restricted by the onset of fatigue and time constraints of the patient, carer, physiotherapist or enginerer. \cite{IOL}.
-Time-varying physiological effects also mean that the models must be reidentified at the start of each treatment session. 
-% Parametrization problems 
-It is difficult to establish the control parameters for these systems and new parameters must be reestablished for each subject. The parameters are not always the same even for the same subject under different circumstances. The traditional control theory, which first requests a mathematicam model for the controlled system, is not applicable. \cite{NNPID}.
-
-Previous work has demonstrated that a semiparametric Gaussian Process Regression (GPR) model can form a basis for a controller achieven three-dimentsional dynamic trajectories. Using a model-based \cite{QSC} avois parametric modeling due to the difficulty in defining the parameters. 
