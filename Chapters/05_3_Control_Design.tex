@@ -22,17 +22,8 @@ The Dynamic Arm Simulator will then determine the arm's dynamics in accordance w
 To assure the PID Controller's performance, an exhaustive hand-tuning was undertaken across 20 different positions, concluding in values of \(K_p = 300\) and \(K_i = 100\). \(K_d = 0\) resulting in only a PD. 
 
 \subsection{Predicting Static Torque}
-static_torque = predict_static_torque(desired_arm_config)';
-desired_torque = torque_feedback+static_torque;
-TotalTorque(i,:)=desired_torque;
-if mod(i,10)==0
-    alpha0 = compute_neural_excitation(desired_arm_config, ...
-        desired_torque,alpha0);
-    for m=1:8
-        mus=whichMuscles(m);
-        u(mus)=alpha0(m)*1;
-    end            
-end
+
+To predict the static torque values for an arm configuration, the hyperparameters found for the Gaussian Process Arm Statics model described on section \ref{sec:model} are used. The resultant torque represent the torque needed to hold the arm static in that configuration.
 
 \subsection{Predicting Muscle Excitations}\label{computemuscleexcitation}
 
@@ -40,45 +31,27 @@ In muscle-driven systems, accurately determining muscle activation patterns is c
 
 The objective is to compute the muscle activation \texttt{act} for given muscle-torque relationships \texttt{M}, desired torques \texttt{tau}, and initial guesses for activations \texttt{alpha0}.
 
-The muscle-torque relationships \texttt{M} the Muscle Torque Production model hyperparameters calculated following the steps explain in Section \ref{sec:model}. This outputs a matrix each column represents the torque about the shoulder elevation plane, shoulder elevation, shoulder rotation adn elbow flexion produced by each muscle group. 
+The muscle-torque relationships \texttt{M} the Muscle Torque Production model hyperparameters calculated following the steps explain in Section \ref{sec:model} (see Formula \ref{eq:MAP}). The model gives out a matrix each column represents the torque for the desired shoulder elevation plane, shoulder elevation, shoulder rotation and elbow flexion produced by each muscle group. 
 
-\subsection{Methodology}
-\begin{description}
-    \item[Objective:] Solve the equation \( M \cdot \alpha = \tau \) for the muscle activations \( \alpha \).
-    \item[Broyden's Quasi-Newton Method:] This iterative optimization technique is employed to approximate the solution of the equation. It starts with an initial guess and updates it based on a Broyden approximation to the inverse Jacobian matrix.
-\end{description}
+The objective is to solve the equation:
+\begin{equation}
+    \tau_{desired} = M * \alpha_0
+\end{equation}
 
-\subsection{Output Constraints}
-Ensure activations are non-negative and normalized such that the maximum activation does not exceed 1.
+In other words how much activation the different muscle groups need to generate the desired torque. 
 
-\section{Armijo Rule: \texttt{armijo}}
+The \textbf{quasi-newton method} is the iterative method used to find this function´s minimum. As computing the Hessian tends to be computationally expensive, the quasi-newton method build an approximation of it iteratively. In other words, it uses and approximation of the information of the function's curvature (Hessian) to find the shortest way to the minimum. 
 
-\subsection{Overview}
-Determines the optimal step size (or learning rate) during iterations, ensuring a sufficient decrease in the function value.
+The function is supported by the Armijo rule and a penalty-based approach, where the muscle activation are effectively optimized. 
 
-\subsection{Methodology}
-Using a backtracking approach, the step size \texttt{alpha1} is repeatedly halved until the sufficient descent condition is met.
+The \textbf{armijo rule }is a method to decided how big of a step to take when trying to find he lower point of a curve or surface. 
+The step is halved every time a step is not taken into a direction where the value of the function is reduced as expected. 
 
-\section{Penalty Function: \texttt{penaltyFunc}}
+The \textbf{penalty function} makes sure that the muscle activations are withing the range of [0,1]. 
 
-\subsection{Overview}
-Imposes penalties on undesired muscle activations, such as negative values or values greater than one.
+Together, they are used to determine the step size of the quasi-Newton method and to include constraints in the optimization problem. 
 
-\subsection{Methodology}
-\begin{description}
-    \item[Objective Function:] Consists of three main components:
-    \begin{enumerate}
-        \item Quadratic norm of activations.
-        \item Quadratic difference between desired and actual torques scaled by a factor \( c \).
-        \item Penalty \( K \) for activations outside the [0,1] range scaled by a factor \( c2 \).
-    \end{enumerate}
-    \item[Gradient Computation:] Gradient of the objective function w.r.t. activations.
-\end{description}
-
-\section{Conclusion}
-
-The \texttt{computeActivation\_Nuri} function, supported by the Armijo rule and a penalty-based approach, effectively computes the muscle activations while ensuring feasible values. By employing the quasi-Newton method, the function efficiently converges to the optimal solution, providing a robust mechanism for muscle-torque simulations in biomechanical systems.
-            
+By employing, the quasi-Newton methods, the function efficiently converges to the optimal solution.             
 
 \subsection{Feasible Points}
 With this tuned controller, a grid, encompassing 960 points, was generated using the \textbf{create\_grid} function (refer to Section \ref{sec:tp}). Each point's arm configuration was calculated using the PI force controller, as detailed in Section \ref{sec:PI}. The feasibility of a point was determined by the ability of the controller to sustain for 1 second its position with an error margin of 0.1. For clarification purposes, the start and the goal position of the controller are set to be the same. 
@@ -93,6 +66,8 @@ The figures (gif if opened in Adobe Acrobat) below present the generated grid. P
     \caption{Feasible points. Open in Adobe Acrobat to see gif movement.}
     
 \end{figure}
+
+\newpage
 \section{Path Following Quasi-Static Controller Development } \label{sec:path}
 
 The goal is to develop a controller that allows the dynamic arm  to navigate or follow a specific trajectory or path. This will simulate the rehabilitation reaching task to be performed. For more information on rehabilitation tasks refer back to Section \ref{rehabilitation_task}. Quasi-static control allows to design a safe, precise and movement-controlled therapy, as it focuses on slow, steady and controlled operations. It facilitates the decomposition of the entire reaching path trajectory into smaller static positions. Dividing the task into smaller steps offers some benefits under the rehabilitation lens:
@@ -102,6 +77,13 @@ The goal is to develop a controller that allows the dynamic arm  to navigate or 
     \item \textbf{Minimized Fatigue} Continuous motions can take a toll in patients with limited strength and endurance. Smaller tasks reduce muscle and join strain preventing fatigue. Using a quasi-static controller can help modify the parameters to adjust to the patient's abilities. 
 \end{itemize}
 
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=1\textwidth]{Pictures/Controller/Quasi-Static Path Controller.jpg}
+    \caption{Flow Diagram Quasi-Static Path Controller }
+    \label{fig:PathController}
+\end{figure}
+\newpage
 For a clearer understanding of the quasi-static control designed, refer to the flow diagram included in this chapter (Figure \ref{fig:PathController}). Here’s a descriptive step-by-step breakdown of the process of path controller:
 
 \begin{enumerate}
@@ -128,12 +110,7 @@ For a clearer understanding of the quasi-static control designed, refer to the f
 In conclusion, the proposed controller is designed to guide a dynamic arm through specified trajectories, mimicking the rehabilitation reaching tasks outlined in Section \ref{rehabilitation_task}. Quasi-static control is used to emphasize safety, precision and control, three key components for a successful rehabilitation. Key components of the control system presented include a \textbf{\textit{find\_path} }function that uses KNN to find the best positions that will define the path to the desired target. Moreover the control loop, adapted from the one on Section \ref{NeuralController}, operated with timed neural excitation (controlled by the variable $frequency$) and position switching to guide the arm accurately along the predefined path (controlled by variable $time_{switch}$).
 
 
-\begin{figure}[h!]
-    \centering
-    \includegraphics[width=1\textwidth]{Pictures/Controller/Quasi-Static Path Controller.jpg}
-    \caption{Flow Diagram Quasi-Static Path Controller }
-    \label{fig:PathController}
-\end{figure}
+
 
 \subsection{Find Path Function} \label{findpath}
 
@@ -177,7 +154,7 @@ The code segment initiates by calculating muscle activation levels using the \te
 Considering the biomechanical implications, this project focuses on applying the Functional Electrical Stimulation the triceps. The control examines the triceps activation levels. This information comes from the Dynamic Arm Simulator and in a real case scenario it will come from EMG sensors situated in the triceps of the human. 
 
 If no activation is detected, a default minimal value is assigned. However, in cases with existing activation, a sigmoid-based control system is adopted. 
-\begin{equation}
+\begin{equation}\label{sigmoid}
     \sigma(z) = \frac{1}{1 + e^{-z}}
 \end{equation}
 
@@ -196,4 +173,35 @@ For correct simulation it is ensured that the triceps activation remains bounded
   \end{figure}
 \end{landscape} % End landscape page
 
-\subsection{P Controller Tuning: Simulated Annealing}
+\subsection{PD Controller Tuning: Simulated Annealing}
+
+
+Building on the insights from the study by \cite{PDP}, their approach was adopted to refine the performance of a proportional derivative controller for a two-segment planar arm model.
+
+The core idea was to identify the best controller gains for the sigmoid function (Equation \ref{sigmoid}) by minimizing the positional error over time. This error was quantified by the formula:
+
+\begin{equation}
+f_{error} = \sqrt{\frac{1}{2TN_m}\sum_{i=1}^{N_m}\sum_{j=1}^{3}\int_{0}^{T}(\varphi_{ij}(t)-\varphi_{ij}^{target})^2 dt}
+\end{equation}
+
+Here, $\varphi_{ij}(t)$ represents the wrist's current position in either x, y, or z coordinates, while $\varphi_{ij}^{target}$ indicates the desired wrist position. The term $T$ specifies the movement's time span, and $N_m$ denotes the 10 arbitrary movements carried out during the simulation.
+
+To calculate the optimal values, simulated annealing algorithm \cite{SimulatedAnnealing} was utilized. Simulated annealing is a probabilistic technique for approximating the global optimum of a given function. It seeks to find the best solution. 
+
+It begins with a initial solution which is set to an initial high temperature. This temperature will control the likelihood of accepting worse solutions as the algorithm progresses. At each iteration a neighbouring solution is chosen randomly. If the neighbouring solution is better than the current one it is accepted as the new current solution. If it is worsen it may accept it depending on the temperature and the difference in quality of accepting the solution or not. After each iteration the temperature is cooled down following the cooling schedule. 
+
+
+The Matlab function \textbf{simulannealbn} is used with the default annealing function \textit{annealingfast}. This function represents how the new points are generated for the next iteration. In this case it has a step with the length temperature (higher temperature higher step) and with a direction uniformly at random. The temperature function used is \textit{temperatureexp}, an exponential decay where the temperature is multiplied by a factor between 0 and 1. The algorithm stops when the temperature reaches a predetermined minimum value, after a fixed number of iterations. 
+
+Simulated annealing avoids getting trapped in local minima, as early on when the temperature is higher the algorithm is more willing to accept worse solutions. In other words, as the temperature cools down the algorithm becomes more selective. 
+
+For this project purposes, maximum of 100 iterations is stipulated, a fixed a function tolerance at 1e-3, and an initial estimate of [10 1.3] for the sigmoid function's two gains  is provided.. The bounds for the controller gains were set between [1.2 3] and [3 15].
+
+The simulated annealing successfully calculated the proportional value to be equal to [2.99 14.478].
+
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=0.6\textwidth]{Pictures/Controller/simulated_annealing.jpg}
+    \caption{Simulated Annealing Explanatory Diagram \cite{SANN}}
+    \label{fig:simulatedannealing}
+\end{figure}
