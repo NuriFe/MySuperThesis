@@ -1,1 +1,45 @@
-\chapter{Title}
+\chapter{Matlab Code Overview}
+In this appendix section, the structure of the code developed in the research is explained.
+\section{Finding Force}
+In this folder the code to find the corresponding force needed to hold the wrist position in static position is given. This includes code for holding the hand when there is no neural excitation and when each muscle is excited to its maximum.
+
+\subsection{static\_force\_simulation.m}
+\textbf{Finding Force for Static Position Without Neural Excitation:}
+\begin{itemize}
+    \item \textit{Inputs:} DAS model, predefined positions, and the `equilibrium.mat` file for initial states.
+    \item \textit{Outputs:} Configuration array (`confg`) for successful simulations and data saved in 'xxx.mat'.
+    \item \textit{Functionality:} The code simulates model dynamics to achieve desired hand positions, manages warnings, and reselects initial muscle length when required.
+\end{itemize}
+
+\subsection{excited\_force\_simulation.m}
+\textbf{Finding Force for Static Position With Neural Excitation:}
+
+\begin{itemize}
+    \item \textit{Inputs:} Arm configuration files from the directory \texttt{'C:\textbackslash ... \textbackslash Static Forces'} stored as \texttt{*.mat} files. These files describe arm states and configurations.
+    \item \textit{Outputs:} Simulated forces, states, and joint moments stored in the directory \texttt{'C:\textbackslash ... \textbackslash Stimulated Forces/'}.
+    \item \textit{Functionality:} The script simulates Dynamic Arm Simulation (DAS) to determine forces based on neural muscle excitations. It uses a PI controller for hand forces, manages MATLAB warnings, and adjusts initial conditions when necessary.
+\end{itemize}
+
+\section{Torque Calculation}
+\subsection{torque\_calculation.m}
+\textbf{Torque Calculate from Forces:}
+
+\begin{itemize}
+    \item Processes muscle-stimulation forces to derive torques, joint configurations, wrist positions, and wrist forces.
+    \item \textit{Inputs:} Preprocessed '.mat' files with force data in a specific directory.
+    \item \textit{Outputs:} Matrices for torques, joint configurations, wrist positions, and wrist forces.
+    \item \textit{Requirements:} 
+    \begin{itemize}
+        \item Structured '.mat' file format.
+        \item 'das3' function and necessary models in the MATLAB path.
+    \end{itemize}
+    \item Adjust 'directory' to change data source and save path.
+\end{itemize}
+
+\section{GPR Model Creation}
+\subsection{compute\_GPR\_model.m}
+\begin{itemize}
+    \item The script loads a specific dataset and conducts Gaussian Process Regression (GPR) for each muscle. Joint angles act as inputs and joint torques as outputs. Both parametric and semiparametric models are constructed for each muscle concerning the data.
+    \item \textit{Input:} Previously calculated data that includes: torques, joint configuration, wrist positions and wrist forces.
+    \item \textit{Output:} Model file contains the \texttt{modeldata} structure, which comprises both parametric and semiparametric models for each muscle across different joint angles. 
+\end{itemize}
