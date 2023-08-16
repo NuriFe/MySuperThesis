@@ -1,13 +1,14 @@
-\section{Dynamic Simulation of the Arm: A Comprehensive Model for Musculoskeletal Dynamics}
-The study of human mobility has benefited greatly from the development of musculoskeletal modeling, which is now a crucial tool for comprehending the dynamics of the human body. Multibody models have historically proved helpful in resolving inverse dynamic issues, particularly in the analysis of human gait and arm movement (please add paper citation for more information). The main disadvantage of these inverse dynamic techniques is the need to gather data from participants who are actively doing the required movement.
+\section{Tool: Dynamic Simulation of the Arm: A Comprehensive Model for Musculoskeletal Dynamics}
+The study of human mobility has benefited greatly from the development of musculoskeletal modeling, which is now a crucial tool for comprehending the dynamics of the human body. Multibody models have historically proved helpful in resolving inverse dynamic issues, particularly in the analysis of human gait and arm movement. The main disadvantage of these inverse dynamic techniques is the need to gather data from participants who are actively doing the required movement.
 
-Moving away from conventional techniques, muscle-driven forward dynamics have allowed the simulation of innovative and fictional movements that would resemble impaired movements, such as those of stroke survivors. These simulations have practical applications in fields such as rehabilitation and motor control research. In \cite{IMP} the Dynamic Arm Simulator (DAS) allowed to test controllers and command interfaces with a human user in the loop. For this project, forward dynamics simulation will be used to test the hypothesis for EMG-inspired PD control of Functional Electrical Stimulation (FES) in stroke rehabilitation. 
+Moving away from inverse dynamics techniques, muscle-driven forward dynamics have allowed the simulation of innovative and fictional movements that would resemble impaired movements, such as those of stroke survivors. These simulations have practical applications in fields such as rehabilitation and motor control research. 
 
-A summary of the musculoskeletal dynamics, including topics like multibody dynamics, muscle contraction dynamics, and muscle activation dynamics, will be covered in this section. Then, an explanation of the forward-dynamic implicit formulation will be given. This formulation has been proven to improve the computational time required to model dynamics with only an RMS error of 0.11 degrees in joint angles when running at real-time speed for a gait simulation with a prosthetic foot and ankle \cite{IMP}.
+The Dynamic Arm Simulator (DAS) is forward-dynamic based. DAS allows to test controllers and has been used in human-in-the-loop focused projects  \cite{IMP}.For this project, forward dynamics simulation will be used to test the hypothesis for EMG-inspired PD control of Functional Electrical Stimulation for stroke rehabilitation. 
 
-Overall, the Dynamic Arm Simulator offers a robust framework for the simulation of human arm movements. It is implemented as a MATLAB Mex function that contains the system dynamics and other functions, making it accessible via a MATLAB function interface, flexible, and adaptable for various applications. 
+A summary of the DAS musculoskeletal dynamics, including topics like multibody dynamics, muscle contraction dynamics, and muscle activation dynamics, will be covered in this section. Moreover, an explanation of the forward-dynamic implicit formulation will be given. This formulation has been proven to improve the computational time required to model dynamics with only an RMS error of 0.11 degrees in joint angles when running at real-time speed for a gait simulation with a prosthetic foot and ankle \cite{IMP}.
 
-An extended overview of the DAS model is provided in the following sections.
+All in all, the Dynamic Arm Simulator offers a robust framework for the simulation of human arm movements. It is implemented as a MATLAB Mex function that contains the system dynamics and other functions, making it accessible via a MATLAB function interface, flexible, and adaptable for various applications. 
+
 
 \begin{table}[h!]
     \centering
@@ -32,7 +33,7 @@ An extended overview of the DAS model is provided in the following sections.
 \end{table}
 \newpage
 \subsection{Structural Overview}
-Links and Degrees of Freedom
+The DAS presents 7 links, 11 degrees of freedom and 22 muscles that define the musculoskeletal system.
 \begin{itemize}
     \item \textbf{7 Links}: Includes the thorax, clavicle, scapula, humerus, ulna, radius, and hand. Figure \ref{fig:links} shows a colour-coded of the different links. 
 \end{itemize}
@@ -89,7 +90,7 @@ PS y & 5.00 & 160.00 \\
 \end{figure}
 \newpage
 \begin{itemize}
-    \item \textbf{22 Muscles and 138 Muscle Elements:} The real-time model consists of 22 muscles and muscle components in total. In order to accurately represent the mechanical line of action of each member, muscles are modeled using the fewest amount of parts possible. The table in Figure  \ref{fig:muscle_elements} displays the amount of elements utilized for each muscle as well as the degrees of freedom that each muscle crosses 
+    \item \textbf{22 Muscles and 138 Muscle Elements:} The real-time model consists of 22 muscles and muscle components in total. In order to accurately represent the mechanical line of action of each member, muscles are modeled using the fewest amount of parts possible. The table in Figure  \ref{fig:muscle_elements} displays the amount of elements utilized for each muscle as well as the degrees of freedom that each muscle crosses. 
     
 \end{itemize}
 
@@ -153,7 +154,7 @@ The inverse of the mass matrix, $M$, is a critical component, as the simulation 
 
 Moreover, elements of $B$ can present high stiffness and damping, leading to high eigenvalues of the Jacobian matrix that correspond to fast-changing components of the system. These high stiffness and high damping lead to oscillatory behaviours within the system. The presence of stiffness originates from the ligaments and tendons having highly nonlinear mechanical properties (zero stiffness when unloaded, high stiffness when maximally loaded).
 
-To counteract the stiff system, standard numerical methods, such as Euler method, require small time steps.
+To counteract the stiff system, when solving using standard numerical methods, such as Euler method,  small time steps will be required.
 
 
 \subsubsection{Muscle contraction dynamics} \label{musclecontraction}
@@ -189,7 +190,7 @@ The differential equation for the state variable $L_{CE}$ is defined by Equation
 \newline
 \subsubsection{Muscle activation dynamics}
 
-The nervous system sends a neural excitation $u(t)$ as a control signal to the muscle that changes the activation through a first-order non-linear activation-deactivation process. This is because the activation $a$, also called the \textit{ active state} cannot be directly controlled by the nervous system. The  muscle activation of a muscle, $a$, is formulated as:
+The nervous system sends a neural excitation $u(t)$ as a control signal to the muscle that changes the activation through a first-order non-linear activation-deactivation process. This is because the activation $a$, also called the \textit{ active state} cannot be directly controlled by the nervous system. The  muscle activation and deactivation of a muscle, $\dot{a}$, is formulated as:
 
 \begin{equation}
     \dot{a} = (u-a)(c_{1}u + c_{2})
@@ -218,15 +219,15 @@ All dynamic equations for the model, which include equilibrium of forces and act
     f(x,\dot{x},u)=0
 \end{equation}
 
-This equation is implicit as there are relationships among the variables. In contrast with explicit formulation, they can not be solve directly for each variable. Solving this implicit equation in a conventional can be hard to solve numerically. This usually requires small steps in simulation, making it time-consuming, computationally expensive and less accurate.
+Solving this differential algebraic equation will allow to predict how muscles and joints change over time based on an initial condition and neural excitations controls.
+
+The equation \ref{eq:implicit} is implicit as there are relationships among the variables. In contrast with explicit formulation, they can not be solve directly for each variable. Solving this implicit equation in a conventional way can be hard, as it usually requires small steps in simulation, making it time-consuming, computationally expensive and less accurate.
 
 The DAS uses an alternative approach where by leaving the equation in its implicit form is possible to calculate the Jacobian of $f$ with respect to $x$, $\dot{x}$ and $u$. \cite{IMP}.
 
-To predict how muscles and joints mover time based on an initial condition and neural excitations controls, the differential algebraic equation (DAEs) must be solved (Equation \ref{eq:implicit}). 
+Knowing the Jacobians, the Rosenbrock method is the best method to solve the implicit equation as it produces quick and realistic values. The Rosenbrock method is a numerical technique used to solve ordinary differential equations (ODEs).The Rosenbrock methods will predict the state of the arm motion at the next time step. It iterates until finds the right guess.
 
-For real time simulation, the DAS uses Rosenbrock method as it requires quick and predictable computations. The Rosenbrock method is a numerical technique used to solve ordinary differential equations (ODEs). The ordinary differential equations describe how the arm motion changes over time. The Rosenbrock methods involves predicting the state at the next time step. It iterates until finds the right guess. The main advantages of Rosenbrcok is that it produce realistic values if the Jacobian matrices are known.
-
-The DAS implements a first order method with constant step size $h$. This means that if the the step size is halved, the error will also be halved. 
+As a result, the DAS implements a first order method with constant step size $h$. This means that if for example the step size is halved, the error will also be halved. 
 \begin{equation} \label{eq:rosenbrock}
  \begin{aligned}
     \Delta x = (\frac{\partial f}{\partial x} + \frac{1}{h}\frac{\partial f}
@@ -292,16 +293,16 @@ Go to Section \ref{musclecontraction} for more information on the three-element 
 This function is to evaluate the dynamics of the model in the implicit form f(x,$\dot{x}$,u) = 0.
 The inputs are:
 \begin{itemize}
-    \item x (nstates x 1) : the model states.
+    \item $x$ (nstates x 1) : the model states.
     \item $\dot{x}$ (nstates x 1): the derivatives of the state of the model.
-    \item u (nmus x 1): muscle excitations.
+    \item $u$ (nmus x 1): muscle excitations.
 \end{itemize}
 
 Some optional inputs include
 \begin{itemize}
-    \item M (5x1): moments applied to the thorax-humerus YZY and the elbow flexion and supination axes.
-    \item exF (2x1): external vertical force of amplitude exF(2) applied at exF(1) meters from the elbow.
-    \item handF (3x1): force applied to the center of mass of the hand. The positive value of handF (1) represents the lateral movement far from the thorax, the positive value of handF (2) represents the upward movement, and the positive value of handF (3) represents the posterior movement.
+    \item $M$ (5x1): moments applied to the thorax-humerus YZY and the elbow flexion and supination axes.
+    \item $exF$ (2x1): external vertical force of amplitude exF(2) applied at exF(1) meters from the elbow.
+    \item $handF$ (3x1): force applied to the center of mass of the hand. The positive value of handF (1) represents the lateral movement far from the thorax, the positive value of handF (2) represents the upward movement, and the positive value of handF (3) represents the posterior movement.
 \end{itemize}
 
 
@@ -316,7 +317,7 @@ Optional outputs include
     \item $\frac{\partial f}{\partial x}$ (nstates x nstates): Jacobian of f with respect to x.
     \item $\frac{\partial f}{\partial \dot{x}}$ (nstates x nstates): Jacobian of f with respect to $\dot{x}$.
     \item $\frac{\partial f}{\partial u}$ (nstates x nmus): Jacobian of f with respect to u.
-    \item qTH (3x1): angles between the thorax and humerus (YZY sequence). This angles are calculate following the standardization on \cite{ISB}
+    \item $qTH$ (3x1): angles between the thorax and humerus (YZY sequence). This angles are calculate following the standardization on \cite{ISB}
 \end{itemize}
 \begin{lstlisting}[style=Matlab-editor]
 [f, dfdx, dfdxdot, dfdu, ~,~,qTH] = das3('Dynamics',x,xdot,step_u,M,exF,handF);
@@ -354,13 +355,23 @@ The model can be visualised in OpenSim as shown in the image below. However, for
 das3stick(xneutral,model);
  \end{lstlisting}
 
- Output of the \textit{das3stick}
+\newpage
 
- \begin{figure}[ht]
+\begin{figure}[h!] 
     \centering
-    \includegraphics[width=0.4\textwidth]{Pictures/DAS/das3stick.png}
-    \caption{Matlab Visualization Output}
-    \label{fig:das3stick}
+
+    \begin{subfigure}[b]{0.45\linewidth}            
+        \includegraphics[width=0.8\textwidth]{Pictures/DAS/das3stick.png}
+        \caption{Matlab Visualization Output}
+        \label{fig:das3stick}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.45\linewidth}
+        \includegraphics[width=0.8\textwidth]{Pictures/Results/armbackground.png}
+        \caption{Arm Simplification MATLAB overlay with OpenSim arm}
+        \label{fig:armsimplification}
+    \end{subfigure}
+
 \end{figure}
 
 The \textit{das3stick} function utilizes the \textit{'Visualization'} functionality that outputs a 13x12 matrix $d$ that contains the orientation matrix and position vector information for each bone.

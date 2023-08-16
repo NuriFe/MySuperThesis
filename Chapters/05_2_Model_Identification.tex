@@ -1,22 +1,27 @@
 \newpage
 \chapter{Model Design and Development}\label{sec:model}
-\subsubsection{Background}
-Model-based methods for controlling the arm as a unified system and determining real-world arm dynamics have been suggested in earlier studies as a solution for precise control. For instance, physics-based models have demonstrated some success in controlling two muscles for rehabilitation \cite{IOL}. However, a major challenge lies in the identification of the physical parameters of the entire arm, which demands a significant amount of data.
+The world of model-based methods for FES-based arm control is vast, encompassing different approaches. This chapter commences with a detailed background on these diverse methods, setting the stage for a deeper exploration. Gaussian Process Regression (GPR) model was selected to control the simulated arm in the DAS. It is selected for its non-parametric and data-driven attributes. This choice allows for a detailed analytical representation of complex patterns without rigid assumptions about muscle structure. 
 
-To address this issue, black-box model-based control methods have been developed. An example of these methods successfully utilized an artificial neural network (ANN) to create a map of task space configuration in relation to the forces that muscles can generate, thereby achieving control of planar arm tasks \cite{FC2D}. Moreover, Lyapunov-based methods have been employed to create a data-driven Deep Neural Network (DNN) based adaptive control method used for Functional Electrical Stimulation (FES)-induced leg extension rehabilitation \cite{CLDNN}.
+The chapter then transitions to the design of the two essential models for this project; the 'Inverse Statics', which determines the joint torque necessary for a specific static arm position, and the 'Muscle Torque Production' that connects arm configuration and muscle activation to the produced joint torque. 
 
-Another difficulty lies in establishing control parameters for these systems, with new parameters needing to be set for each subject. Even for the same subject, these parameters can vary under different conditions, making the traditional control theory that requires a mathematical model of the controlled system unsuitable \cite{NNPID}. 
+From choosing the target positions and initial configurations for data collection, to the introduction of a PI controller designed to compute wrist force, to the torque calculation via the Kinematic Jacobian, each section builds upon the previous. Later sections provide a comparative analysis of the three GPR models, highlighting the semi-parametric model that  combines the flexibility of black-box functions with strong generalization capabilities. With a foundation in GPR, the chapter concludes by detailing its implementation on Matlab, delving into data extraction, model fitting, and the final derivation of hyperparameters representative of the models.
 
-Despite the potential of model-based FES control in providing necessary accuracy, few approaches have found their way into clinical practice. This shortfall can be attributed to challenges in deriving an accurate model given the limited identification time due to factors such as onset of fatigue and time constraints of the patient, carer, physiotherapist, or engineer \cite{IOL}. Furthermore, due to time-varying physiological effects, models must be re-identified at the commencement of each treatment session.
+\subsection{Background}
+Model-based methods for FES controlling the arm as a unified system and determining real-world arm dynamics have been suggested in earlier studies as a solution for precise control. For instance, physics-based models have demonstrated some success in controlling two muscles for rehabilitation \cite{IOL}. However, a major challenge lies in the identification of the physical parameters of the entire arm, which demands a significant amount of data.
 
-Previous work has demonstrated that a semi-parametric Gaussian Process Regression (GPR) model can form the foundation for a controller achieving three-dimensional dynamic trajectories. This model-based method \cite{QSC} circumvents parametric modelling challenges owing to the difficulty in defining the parameters. The semiparametric GPR combines the generalization potential of a parameterized model with the ability of a nonlinear function approximator that represents the diversity of the musculoskeletal dynamics. 
+To address this issue, black-box model-based control methods have been developed. An example of these methods successfully utilized an artificial neural network (ANN) to create a map of task space configuration in relation to the forces that muscles can generate, thereby achieving control of planar arm tasks \cite{FC2D}. Moreover, Lyapunov-based methods have been employed to create a data-driven Deep Neural Network (DNN) based adaptive control method used for FES-induced leg extension rehabilitation \cite{CLDNN}.
 
-In this project, we developed our model identification in a manner akin to the approach outlined in the paper \cite{QSC}, as it was found to be successful in circumventing the challenges intrinsic to parametric modeling. The GPR model provides a non-parametric, data-driven approach, allowing for an analytical representation of complex patterns without necessitating rigid assumptions regarding the model's structure.
+Another difficulty for controlling arm movements lies in establishing control parameters for these systems, with new parameters needing to be set for each subject. Even for the same subject, these parameters can vary under different conditions, making the traditional control theory that requires a mathematical model of the controlled system unsuitable \cite{NNPID}. 
 
-\newpage
-\subsubsection{Design}
+Despite the potential of model-based FES control in providing the necessary flexibility and accuracy, few approaches have found their way into clinical practice. This shortfall can be attributed to challenges in deriving an accurate model given the limited identification time due to factors such as onset of fatigue and time constraints of the patient, carer, physiotherapist, or engineer \cite{IOL}. Furthermore, due to time-varying physiological effects, models must be re-identified at the commencement of each treatment session.
 
- A two part modeled is developed consisting of:
+Previous work has demonstrated that a semi-parametric Gaussian Process Regression (GPR) model can form the foundation for a controller achieving three-dimensional dynamic trajectories \cite{QSC}. This model-based method avoids parametric modelling challenges such as the difficulty in defining the parameters. The semiparametric GPR combines the generalization potential of a parameterized model with the ability of a nonlinear function approximator that represents the diversity of the musculoskeletal dynamics. 
+
+In this project, the model identification is developed in a manner similar to the approach outlined in the paper \cite{QSC}. The GPR model provides a non-parametric, data-driven approach, allowing for an analytical representation of complex patterns without necessitating rigid assumptions regarding the model's structure.
+
+\subsection{Model Design and Identification}
+
+ A two part modeled is needed as shown in Figure \ref{fig:bdd}. It consists of:
 
  \begin{itemize}
      \item \textbf{Inverse Statics}. It calculates the joint torque needed to hold a desired static arm configuration.
@@ -24,6 +29,8 @@ In this project, we developed our model identification in a manner akin to the a
  \end{itemize}
 
 To gather data for the models a PI controller is designed to compute the force applied at the wrist in order to hold the arm in a static position, both with and without neural excitation. This force is subsequently converted into torque using the kinematic Jacobian. The process is detailed in sections \ref{sec:tp}, \ref{sec:PI} and \ref{sec:torque} and a flow diagram is shown in Figure \ref{fig:datacreation}. 
+
+Finally, the collected data is used to train the two semiparametric GPR models which are used to predict $\tau_j$ for a given configuration. The process is detailed in section \ref{sec:spgp} and a flow diagram is shown in Figure \ref{fig:modelcreation}.
 
 \begin{figure}[h!]
     \centering
@@ -33,7 +40,7 @@ To gather data for the models a PI controller is designed to compute the force a
 \end{figure}
 
 
-Finally, the collected data is used to train the two semiparametric GPR models which are used to predict $\tau_j$ for a given configuration. The process is detailed in section \ref{sec:spgp} and a flow diagram is shown in Figure \ref{fig:modelcreation}.
+
 
 \begin{figure}[h!]
     \centering
@@ -42,11 +49,12 @@ Finally, the collected data is used to train the two semiparametric GPR models w
     \label{fig:modelcreation}
 \end{figure}
 
- \section{Target Positions and Initial Configuration} \label{sec:tp}
+\newpage
+ \section{Target Positions} \label{sec:tp}
 
  In the paper \cite{QSC} the simulated experiment resembles the one performed in a real-case scenario. A total of 27 different positions were analyzed where an external robot held the wrist of the arm into the different static positions. The robot was equipped with a three-dimensional force sensor at its end-effector \cite{HSAC}. 
  
- Since no real-world situation has been evaluated for this project, the simulation's goal is to represent a reaching motion beginning from an equilibrium posture. Additionally, the stroke survivor's arm is not being held by an external robot.As detailed in Section X, this approach stems from the assumption that the stroke survivor retains a degree of arm stability, sufficient to facilitate a limited reaching movement.  
+ Since no real-world situation has been evaluated for this project, the simulation's goal is to represent a reaching motion beginning from an equilibrium posture. Additionally, the stroke survivor's arm is not being held by an external robot.As detailed in Section \ref{Design}, this approach stems from the assumption that the stroke survivor retains a degree of arm stability, sufficient to facilitate a limited reaching movement.  
 
  For this, it is decided to find calculate the forces in 64 different positions. This 64 positions are automatically generated using the function \textit{\textbf{create\_grid()}}.
 
@@ -71,7 +79,7 @@ The \textbf{\textit{create\_grid()}} function generates a grid of target points 
 
 \begin{figure}[h!]
     \centering
-    \includegraphics[width=0.4\textwidth]{Pictures/Model/create_grid.png}
+    \includegraphics[width=0.3\textwidth]{Pictures/Model/create_grid.png}
     \caption{\textit{create\_grid} function output. 64 target positions used to calculate the required force to hold a this reference static positions with and without neural excitation.}
     \label{fig:create_grid}
 \end{figure}
@@ -79,20 +87,29 @@ The \textbf{\textit{create\_grid()}} function generates a grid of target points 
 \newpage
 \section{PI Force Controller}\label{sec:PI}
 
- The goal of the static force simulation is to determine the necessary force to keep the wrist in a specific static position. It involves two distinct scenarios. Both scenarios use a PI controller to exert the required force at the wrist, using the input \textit{handF} in the \textbf{\textit{das3\_step(...)}} function.
+ The goal of the static force simulation is to determine the necessary force to keep the wrist in a specific static position for the aforementioned defined target positions. It involves two distinct scenarios. Both scenarios use a PI controller to exert the required force at the wrist, using the input \textit{handF} in the \textbf{\textit{das3\_step(...)}} function.
+ 
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=\textwidth]{Pictures/Model/PIForces Scenarios.png}
+    \caption{Block Diagram for Two Scenarios}
+    \label{fig:PITSlockDiagram}
+\end{figure}
 
 \begin{figure}[h!]
     \centering
-    \includegraphics[width=0.9\textwidth]{Pictures/Model/PIController.png}
+    \includegraphics[width=0.8\textwidth]{Pictures/Model/PIController.png}
     \caption{Block Diagram for PI Force Controller}
     \label{fig:PIBlockDiagram}
 \end{figure}
 
+
+
 In the first scenario, no muscles are excited. The simulation starts from the equilibrium position and continues for 3 seconds, with a time step of 0.001 seconds. The focus is to calculate how much force is needed to apply to maintain a specific arm configuration static.
 
-In the second scenario, the simulation begins with the arm configuration that was determined after running the previous no-excitation simulation. Here, one muscle at a time is stimulated at 100\%, i.e, $u_{j}$. The index j represents the muscle, this values goes from 1 to 9. Although the muscles may deviate from the starting position, the PI controller continuously adjusts to keep the hand in its initial position. This simulation is shorter, running for 0.5 seconds, but still utilizes a time step of 0.001 seconds.
+In the second scenario, the simulation begins with the arm configuration that was determined after running the previous no-excitation simulation, as explained in the flow diagram of Figure \ref{fig:PITSlockDiagram}. Here, one muscle at a time is stimulated at 100\%, i.e, $u_{j}$. The index j represents the muscle, this values goes from 1 to 9. Although the muscles may deviate from the starting position, the PI controller continuously adjusts to keep the hand in its initial position. This simulation is shorter, running for 0.5 seconds, but still utilizes a time step of 0.001 seconds.
 
-After each time step,in both scenarios, the difference between the wrist's current position and the target is computed. This error is then multiplied by the Proportional (P) coefficient (Kp) of the PI controller. Concurrently, the accumulated error is updated and multiplied by the Integral (I) coefficient (Ki).  The sum of both the proportional and integral terms dictates the \textit{handF} for the next step (Equation \ref{eq:PID}). In the context of the PI controller, the proportional segment is responsible for creating an output in direct relation to the present error, while the integral portion systematically reduces  steady-state error by considering the history of past errors.
+After each time step,in both scenarios, the difference between the wrist's current position and the target is computed as shown in Figure \ref{fig:PIBlockDiagram}. This error is then multiplied by the Proportional (P) coefficient (Kp) of the PI controller. Concurrently, the accumulated error is updated and multiplied by the Integral (I) coefficient (Ki).  The sum of both the proportional and integral terms dictates the \textit{handF} for the next step (Equation \ref{eq:PID}). In the context of the PI controller, the proportional segment is responsible for creating an output in direct relation to the present error, while the integral portion systematically reduces  steady-state error by considering the history of past errors.
 
 \begin{equation} \label{eq:PID}
 \begin{aligned}
@@ -123,7 +140,10 @@ The force necessary to reach each point is calculated by averaging the last 10\%
     \label{tab:PI}
 \end{table}
 
-Below is a MATLAB code snippet that demonstrates the calculation of PI force, inclusive of the step simulation.
+\newpage
+\subsubsection{Matlab Code}
+
+Below is a MATLAB code snippet that represents the PI Controller shown in Figure \ref{fig:PIBlockDiagram}. 
 
 \begin{lstlisting}[style=Matlab-editor]
 hand_current = wrist_position(x)
@@ -234,30 +254,6 @@ Each column of $M(q)$ describes the torque generated by each muscle group at ful
 \newpage
 \section{Model Creation: Semi-Parametric Gaussian Process Regression} \label{sec:spgp}
 
-\subsection{Comparative Analysis of Model Types}
-
-A comparative accuracy analysis was conducted between non-parametric, semiparametric, and parametric models in \cite{SPI}. The semiparametric GP model resulted as the most accurate, combining the flexibility of a black-box function approximation with the generalization strength of a parameterized model, as indicated in \cite{SPI}. This semiparametric model estimated torques during muscle stimulation with less than 20\% error relative to the total muscle torque and passive torque required to move the arm. 
-
-Details on the quality of the model can be found in \cite{SPI}. A summary of the three models is described in the table \ref{table:comparison}.
-
-
-\begin{table}[ht]
-\centering
-\begin{tabularx}{\textwidth}{|c|X|X|X|}
-\hline
-\multirow{6}{*} & \textbf{Description} & \textbf{Advantages} & \textbf{Disadvantages} \\
-\hline
-\multirow{5}{*}{\rotatebox{90}{\textbf{Parametric}}} & Linear model used to represent torque in a single degree of freedom, accounting mainly for joint stiffness and damping. & Simplicity and efficiency due to linear nature. It avoids solving nonlinear optimization problems. & Inaccuracy with full complexity. Limited application in simpler version as it does not account for physicial properties. \\
-\hline
-\multirow{7}{*}{\rotatebox{90}{\textbf{Nonparametric}}} & Utilizes Gaussian process regression to predict arm joint torques, defining mean and covariance functions. It relies on training samples to make predictions. & Adaptability, less overfitting, avoids identifiability issues as it does not need rich enough data to guarantee identifiability of parameters. & Computational complexity and demanding. \\
-\hline
-\multirow{13}{*}{\rotatebox{90}{\textbf{Semiparametric}}} & Combines aspects of both parametric and nonparametric models. It uses a Gaussian process where the mean function is derived from the parametric model and the covariance is the sum of a squared-exponential covariance function and an term for uncertainty in the parameters of the parametric model. & Flexibility, generalization, local relevance (dominate predictions for inputs close to training data) with complex dynamics. & Complexity in understanding, implementing, and tuning. \\
-\hline
-\end{tabularx}
-\caption{Comparison of Parametric, Nonparametric, and Semiparametric Models}
-\label{table:comparison}
-\end{table}
-
 \subsection{Background}
 
 Gaussian Process Regression (GPR) is a powerful and flexible tool used in machine learning for fitting a function to data. It is rooted in the mathematical foundation of Multivariate Gaussian Distributions, where each random variable is distributed normally, and their joint distribution is also Gaussian. GPR can be expressed as 
@@ -278,6 +274,30 @@ In summary, GPR operates on the foundational principles of Bayesian inference to
     \caption{Gaussian Process Regression \cite{GPR_Image}}
     \label{fig:GPR}
 \end{figure}
+
+\subsection{Comparative Analysis of Model Types}
+
+A comparative accuracy analysis was conducted between non-parametric, semiparametric, and parametric models in \cite{SPI}. The semiparametric GP model resulted as the most accurate, combining the flexibility of a black-box function approximation with the generalization strength of a parameterized model, as indicated in \cite{SPI}. This semiparametric model estimated torques during muscle stimulation with less than 20\% error relative to the total muscle torque and passive torque required to move the arm. 
+
+Details on the quality of the model can be found in \cite{SPI}. A summary of the three models is described in the table \ref{table:comparison}.
+
+\begin{table}[h!]
+\centering
+\begin{tabularx}{\textwidth}{|c|X|X|X|}
+\hline
+\multirow{6}{*} & \textbf{Description} & \textbf{Advantages} & \textbf{Disadvantages} \\
+\hline
+\multirow{5}{*}{\rotatebox{90}{\textbf{Parametric}}} & Linear model used to represent torque in a single degree of freedom, accounting mainly for joint stiffness and damping. & Simplicity and efficiency due to linear nature. It avoids solving nonlinear optimization problems. & Inaccuracy with full complexity. Limited application in simpler version as it does not account for physicial properties. \\
+\hline
+\multirow{7}{*}{\rotatebox{90}{\textbf{Nonparametric}}} & Utilizes Gaussian process regression to predict arm joint torques, defining mean and covariance functions. It relies on training samples to make predictions. & Adaptability, less overfitting, avoids identifiability issues as it does not need rich enough data to guarantee identifiability of parameters. & Computational complexity and demanding. \\
+\hline
+\multirow{13}{*}{\rotatebox{90}{\textbf{Semiparametric}}} & Combines aspects of both parametric and nonparametric models. It uses a Gaussian process where the mean function is derived from the parametric model and the covariance is the sum of a squared-exponential covariance function and an term for uncertainty in the parameters of the parametric model. & Flexibility, generalization, local relevance (dominate predictions for inputs close to training data) with complex dynamics. & Complexity in understanding, implementing, and tuning. \\
+\hline
+\end{tabularx}
+\caption{Comparison of Parametric, Nonparametric, and Semiparametric Models}
+\label{table:comparison}
+\end{table}
+
 
 
 
