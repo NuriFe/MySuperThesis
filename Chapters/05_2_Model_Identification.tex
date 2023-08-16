@@ -1,10 +1,10 @@
 \newpage
-\chapter{Model Design and Development}\label{sec:model}
+\chapter{Arm Model Design and Development}\label{sec:model}
 The world of model-based methods for FES-based arm control is vast, encompassing different approaches. This chapter commences with a detailed background on these diverse methods, setting the stage for a deeper exploration. Gaussian Process Regression (GPR) model was selected to control the simulated arm in the DAS. It is selected for its non-parametric and data-driven attributes. This choice allows for a detailed analytical representation of complex patterns without rigid assumptions about muscle structure. 
 
 The chapter then transitions to the design of the two essential models for this project; the 'Inverse Statics', which determines the joint torque necessary for a specific static arm position, and the 'Muscle Torque Production' that connects arm configuration and muscle activation to the produced joint torque. 
 
-From choosing the target positions and initial configurations for data collection, to the introduction of a PI controller designed to compute wrist force, to the torque calculation via the Kinematic Jacobian, each section builds upon the previous. Later sections provide a comparative analysis of the three GPR models, highlighting the semi-parametric model that  combines the flexibility of black-box functions with strong generalization capabilities. With a foundation in GPR, the chapter concludes by detailing its implementation on Matlab, delving into data extraction, model fitting, and the final derivation of hyperparameters representative of the models.
+From choosing the target positions for data collection, to the PI controller designed to compute wrist force to hold static at the target positions, to the torque calculation via the Kinematic Jacobian, each section builds upon the previous. Later sections provide a comparative analysis of the three GPR models, highlighting the semi-parametric model that  combines the flexibility of black-box functions with strong generalization capabilities. With a foundation in Semi-Parametric GPR models, the chapter concludes by detailing its implementation on Matlab, delving into data extraction, model fitting, and the final derivation of hyperparameters representative of the desired models.
 
 \subsection{Background}
 Model-based methods for FES controlling the arm as a unified system and determining real-world arm dynamics have been suggested in earlier studies as a solution for precise control. For instance, physics-based models have demonstrated some success in controlling two muscles for rehabilitation \cite{IOL}. However, a major challenge lies in the identification of the physical parameters of the entire arm, which demands a significant amount of data.
@@ -56,33 +56,34 @@ Finally, the collected data is used to train the two semiparametric GPR models w
  
  Since no real-world situation has been evaluated for this project, the simulation's goal is to represent a reaching motion beginning from an equilibrium posture. Additionally, the stroke survivor's arm is not being held by an external robot.As detailed in Section \ref{Design}, this approach stems from the assumption that the stroke survivor retains a degree of arm stability, sufficient to facilitate a limited reaching movement.  
 
- For this, it is decided to find calculate the forces in 64 different positions. This 64 positions are automatically generated using the function \textit{\textbf{create\_grid()}}.
-
-
-The \textbf{\textit{create\_grid()}} function generates a grid of target points by defining the starting and ending coordinates for the x, y, and z dimensions and then linearly spacing these coordinates. If a model is provided as an input, the function also plots the wrist references, offering a visual representation of these coordinates.
-
-\begin{table}[h]
-    \centering
-    \caption{Start and End Positions for x, y, and z Coordinates}
-
-    \begin{tabular}{|c|c|c|}
-        \hline
-        Coordinate & Start Position & End Position \\
-        \hline
-        x & 0.3 & -0.08 \\
-        y & 0 & -0.3 \\
-        z & -0.1 & -0.35 \\
-        \hline
-    \end{tabular}
-    \label{table:coordinates}
-\end{table}
-
+ For this, it is decided to find calculate the forces in 64 different positions. These 64 positions are automatically generated using the function \textit{\textbf{create\_grid()}}.
+ 
 \begin{figure}[h!]
     \centering
     \includegraphics[width=0.3\textwidth]{Pictures/Model/create_grid.png}
     \caption{\textit{create\_grid} function output. 64 target positions used to calculate the required force to hold a this reference static positions with and without neural excitation.}
     \label{fig:create_grid}
 \end{figure}
+
+The \textbf{\textit{create\_grid()}} function generates a grid of target points by defining the starting and ending coordinates for the x, y, and z dimensions and then linearly spacing these coordinates. If a model is provided as an input, the function also plots the wrist references, offering a visual representation of these coordinates.
+
+\begin{table}[h]
+    \centering
+    \caption{Start and End Positions for x, y, and z Coordinates}
+    \tiny
+    \begin{tabular}{|c|c|c|}
+        \hline
+        \textbf{Coordinate} & Start Position & End Position \\
+        \hline
+        \textbf{x} & 0.3 & -0.08 \\
+        \textbf{y} & 0 & -0.3 \\
+        \textbf{z} & -0.1 & -0.35 \\
+        \hline
+    \end{tabular}
+    \label{table:coordinates}
+\end{table}
+
+
 
 \newpage
 \section{PI Force Controller}\label{sec:PI}
@@ -141,7 +142,7 @@ The force necessary to reach each point is calculated by averaging the last 10\%
 \end{table}
 
 \newpage
-\subsubsection{Matlab Code}
+\subsection{Implementation}
 
 Below is a MATLAB code snippet that represents the PI Controller shown in Figure \ref{fig:PIBlockDiagram}. 
 
@@ -201,7 +202,7 @@ where the Jacobian matrix ($J \epsilon R^{6xn}$) relates the infinitesimal joint
 
 Calculating the kinematic Jacobian in robotics involves defining the structure and parameters of the robot's joints and links, often using conventions like Denavit-Hartenberg (D-H) parameters. Transformation matrices are found for each joint, and the end-effector position is obtained by multiplying these matrices.
 
-The Jacobian matrix is then constructed by differentiating the end-effector's position with respect to each joint variable, considering whether the joint is revolute or prismatic. The resulting 6×n matrix, where n is the number of joints, maps the joint velocities to the linear and angular velocities of the end-effector.
+The Jacobian matrix is then constructed by differentiating the end-effector's position with respect to each joint variable, considering whether the joint is revolute or prismatic. The resulting 6×n matrix, where n is the number of joints, maps the joint velocities to the linear and angular velocities of the end-effector. In this project´s scope the linear velocities will be the only ones taken into account. 
 
 \subsection{Implementation}
 The equation \ref{eq:displacement} is applied as shown in the MATLAB code below to calculate the torque values from the mean forces previously calculate using the PI controller. 
@@ -211,7 +212,7 @@ The equation \ref{eq:displacement} is applied as shown in the MATLAB code below 
 torque = dPhand_dx'*hand_F;
 \end{lstlisting}
 
-Due to the complex system, to calculate the kinematic Jacobian of the arm, the concept of infinitesimal displacement presented in Equation \ref{eq:displacement} is used. The function \textbf{\textit{handpos\_jacobian(x)}} (MATLAB code below) take the state and perturbs each degree of freedom by a small mount $h$. For each perturbation, the old and the new hand positions are  subtracted and divided by $h$. This describes how the changes in the degrees of freedom affect the hand´s position at that particular state. 
+Due to the complex system, to calculate the kinematic Jacobian of the arm, the concept of infinitesimal displacement presented in Equation \ref{eq:displacement} is used. The function \textbf{\textit{handpos\_jacobian(x)}} (MATLAB code below) takes the state and perturbs each degree of freedom by a small mount $h$. For each perturbation, the old and the new hand positions are  subtracted and divided by $h$. This describes how the changes in the degrees of freedom affect the hand´s position at that particular state. 
 
 \begin{lstlisting}[style=Matlab-editor]
 function [dPhand_dx, Phand, Phand_new] = handpos_jacobian(x)
@@ -262,11 +263,11 @@ Gaussian Process Regression (GPR) is a powerful and flexible tool used in machin
 \end{equation}
 where  \( \mu \) is the the mean vector and \( k(x, x') \) is the covariance or kernel function. The mean vector \( \mu \) describes the expected value of the distribution, while the kernel models the variance along each dimension and determines how the different random variables are correlated. The covariance matrix is always symmetric and positive semi-definite.
 
-GPR creates a model of the function it is trying to learn, using a process that considers an infinite number of dimensions and includes an element of randomness. It encapsulated initial beliefs about the function in the \textit{prior distribution}, defined by the mean and kernel functions. Observations are used to update these beliefs through the \textit{likelihood function}, leading to the computation of the \textit{posterior distribution}. This posterior reflects updated beliefs about the possible functions that best fit the data.
+GPR creates a model of the function it is trying to learn, using a process that considers an infinite number of dimensions and includes an element of randomness. It encapsulates initial beliefs about the function in the \textit{prior distribution}, defined by the mean and kernel functions. Observations are used to update these beliefs through the \textit{likelihood function}, leading to the computation of the \textit{posterior distribution}. This posterior reflects updated beliefs about the possible functions that best fit the data.
 
 Predictions are made by calculating the mean and variance of the predictive distribution at new inputs, allowing for both point estimates and uncertainty estimates. 
 
-In summary, GPR operates on the foundational principles of Bayesian inference to model a function from given data. This enables GPR to deliver both point predictions and associated uncertainties. The inherent flexibility and adaptability of GPR make it a powerful and widely applicable tool for function approximation in machine learning and statistical analysis. \cite{GPR}
+In summary, GPR operates on the foundational principles of Bayesian inference to model a function from given data. This enables GPR to deliver both point predictions and associated uncertainties. The inherent flexibility and adaptability of GPR makes it a powerful and widely applicable tool for function approximation in machine learning and statistical analysis. \cite{GPR}
 
 \begin{figure}[h!]
     \centering
@@ -307,16 +308,12 @@ Details on the quality of the model can be found in \cite{SPI}. A summary of the
 
 Based on the results of the aforementioned study, the data for the set of 64 training positions is used to train semiparametric GPR models which are used to predict $\tau_j$ for a given configuration. The models are used to determine the static arm torques $p(q)$ and the muscle force mapping $R(q)$ for a desired arm configuration.
 The kernel function used in the GPR was the squared exponential function using the distance metric for rigid bodies. 
- 
-A MATLAB script, \textbf{\textit{compute\_GPR\_model}}, is designed to compute the model performing Gaussian Process Regression to fit the data. This code loads the data and does GPR for each muscle where the inputs are the arm configuration angles and the output are the joint torques.
 
-The flow diagram shows the steps of the code.
+A MATLAB script, \textbf{\textit{compute\_GPR\_model}}, is designed to compute the model performing Gaussian Process Regression to fit the data. The flow diagram on Figure \ref{fig:ModelComputationGPR} shows the steps followed on the code to compute the hyperparameters of the model.
 
-A more thorough description is presented below.
+The code firsts initializes the prior parameters and the covariance matrices the data containing the information related to each model is loaded. The script sets up 9 specific muscles and 64 target positions. 
 
-After initializing the prior parameters and the covariance matrices the data containing the information related to each model is loaded. The script sets up 10 specific muscles and 64 target positions. 
-
-A loop iterates through each muscle, fexecuting the following steps:
+A loop iterates through each muscle, executing the following steps:
 
 \begin{itemize}
     \item \textbf{Data Extraction}. The angle and torque data to each muscle is extracted.
@@ -324,24 +321,29 @@ A loop iterates through each muscle, fexecuting the following steps:
     \item \textbf{\textit{Output Model}}. Once the analysis is completed the \textbf{modeldata} structure containing the details of the models for all muscles is saved into a MATLAB file. 
 \end{itemize}
 
+ 
+ This code loads the data and does GPR for each muscle where the inputs are the arm configuration angles and the output are the joint torques. 
+
+
+
 \textbf{\textit{PARAMETRIC FUNCTION}}
 
 For the \textbf{parametricfunctionReach}, Bayesian Regression (\cite{BLM}) is used to calculate the mean ($\mu$) and the covariance ($\Sigma$) for the prior parameter distribution for the semiparametric model. Bayessian Regression is a statistical method that estimates the unknown parameters of a linear model by considering them as random variables with prior distributions. It takes into account prior knowledge of the parameters to provide a more precise understanding.
 
-In the following paragraphs, the code and the corresponding mathematical implications will be detailed.  Refer to figure \ref{fig:ModelComputationGPR} for a detailed flow diagram.
+In the following paragraphs, the code and the corresponding mathematical implications will be detailed.  Refer to Figure \ref{fig:ModelComputationGPR} for a detailed flow diagram.
 
 First the basis function or design matrix ,$\Phi$, is evaluated for each arm configuration torque. It is used to represent the relationship between the input variables and the target outputs in a compact and mathematical form. 
 
 Then a residual squared error computation following Equation \ref{eq:rsq} is calculated , where the model parameter, $\beta$, to predict the outputs is calculated by isolating it from the linear model. \( y \) is the target/output vector, \( \Phi \) is the design matrix, \( \beta \) is the vector of coefficients,\( \hat{y} \) is the predicted output vector and  \( sqres \) is the residual error. This residual error will act as the covariance matrix noise.
 
-\begin{equation}
+\begin{equation}\label{eq:rsq}
 \begin{aligned}
     y = \Phi \beta \\
     \beta = \Phi^+y \\
     \hat{y} = \Phi*\beta \\
     sqres = mean((\hat{y}-y)^2) \\
 \end{aligned}
-\end{equation} \label{eq:rsq}
+\end{equation} 
 
 Finally, the mean \( \mu \) and covariance \( \Sigma \) of the parameter $\beta$ distribution  that will define the prior distribution for the semiparametric model are calculated as a posterior distribution following the Bayesian linear regression.  
 
@@ -375,7 +377,7 @@ In summary, the prior mean \( \mu_0 \) and covariance \( \Sigma_0 \) encapsulate
 
 \textbf{\textit{SEMI-PARAMETRIC FUNCTION}}
 
-In the following paragraphs, the code and the corresponding mathematical implications will be detailed.  Refer to figure \ref{fig:ModelComputationGPR} for a detailed flow diagram.
+In the following paragraphs, the code and the corresponding mathematical implications for the \textbf{semi-parametricfunctionReach} will be detailed.  Refer to Figure \ref{fig:ModelComputationGPR} for a detailed flow diagram.
 
 First the basis function or design matrix ,$\Phi$, is evaluated for each arm configuration torque. It is used to represent the relationship between the input variables and the target outputs in a compact and mathematical form. 
 

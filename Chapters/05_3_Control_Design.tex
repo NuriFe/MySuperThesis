@@ -1,6 +1,14 @@
 \chapter{Control Design and Development}
 
+This chapter presents the arm control design and development that will achieve the objectives highlighted in Section \ref{Design} and illustrated in Figure \ref{fig:bdd}. This journey spans across three stages, each building up from the preceding one, starting from a static control to a sophisticated EMG-influenced control.  
 
+The chapter commences with the \textbf{Static Controller}. This controllers serves as a foundation to ensure the arm's steadiness in a specified position. Utilizing the models from Section \ref{sec:model} and combining it with a PD Controller, the necessary neural activations are generated to hold the arm in the static position. To measure its effectiveness, the controller is assessed across 960 points. From this examination, a select group of \textit{feasible points} are identified. A feasible point signifies that the controller was able to find the corresponding neural activation to sustain a target position uninterrupted for a full second. 
+
+Building upon the static controller, the next phase of \textbf{Path Following Quasi-Static Controller} incorporates the element of motion. The calculated feasible points serve as stepping stones, forming a path designed using the K-Nearest-Neighbours algorithm. This path will be used by the controller to move the arm from point to point, steadily aiming for the end target position.
+
+At the end of the chapter the \textbf{EMG-Influenced FES Controller} is studied. Here, muscle activations are tailored according to the design considerations set in \ref{sec:design considerations}, resulting in a distinct stroke-like movement pattern. A FES device is simulated in this phase. Its objective is to supplement the muscle activation to perform the intended movement. The FES device control dynamically adjusts its output depending on the real-time neural activity data from the triceps. 
+
+By the end of this chapter, readers will have an understanding of the layered process performed to design the simulated EMG-Influenced FES controller of this project. 
 
 \section{Static Controller} \label{NeuralController}
 
@@ -64,7 +72,7 @@ The figures (gif if opened in Adobe Acrobat) below present the generated grid. P
     \centering
     \animategraphics[autoplay,loop,width=0.8\textwidth]{12}{Pictures/Controller/gif/feasiblepoints-}{0}{149}
     \caption{Feasible points. Open in Adobe Acrobat to see gif movement.}
-    
+    \label{gif:Feasiblepoints}
 \end{figure}
 
 \newpage
@@ -132,7 +140,7 @@ This process is repeated until the path reaches the desired end position. As a r
 
 
 \newpage
-\section{EMG-Influenced Controller Development}
+\section{EMG-Influenced FES Controller Development}
 
 Building on top of the controllers previously designed and discussed in this section, we further extend our investigation into the intricate challenges faced by stroke patients. An after-math of stroke is the muscular imbalances, most specifically muscle spasticity, which refers to muscle stiffness that influences movement and speed. As a result, they present difficulty extending the arm. The biceps tend to be over-activated and the triceps and anterior deltoid under-activated \cite{IOL}. To counteract these muscular imbalances, this controller has being design to simulate an effective and targeted electric stimulation. 
 

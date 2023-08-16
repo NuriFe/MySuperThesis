@@ -9,7 +9,7 @@ The green dot resembles the start of the movement and the red dot the end. The l
 The PI controller was successfully implemented across 64 points (see Figure \ref{fig:create_grid}).
 
 \subsection{Scenario 1: From equilibrium position to target without Neural Excitation}
-Scenario 1 was simulated during 3 seconds with a time step of 0.001s, Kp = 2000 and Ki = 100 (See Table \ref{tab:PI}).
+Scenario 1 was simulated during 3 seconds with a time step of 0.001s, Kp=2000 and Ki=100 (See Table \ref{tab:PI}).
 The PI model successfully controlled the force for the 64 positions reaching. The table below presents performance results from Scenario 1.
 
 \begin{table}[h]
@@ -31,7 +31,7 @@ The PI model successfully controlled the force for the 64 positions reaching. Th
     \label{tab:PINNE}
 \end{table}
 
-It can be seen that the mean target position error is very low and there is not a high variance for the 64 different positions. Moreover, the steady force values are achieved early during the simulation. Finally, it is interesting to highlight that the simulation running time has a 2s difference from the real-time simulation. 
+It can be seen that the mean target position error is very low and there is not a high variance for the 64 different positions. The force values  achiev a steady value early during the simulation. Finally, it is interesting to highlight that the simulation running time has a 2s difference from the real-time simulation. 
 
 The GIF \ref{gif:PICONTROLLER2} (best viewed in Adobe Acrobat) illustrated the OpenSIM movement under the PI controller without neural excitation from equilibrium position to target position. 
 
@@ -46,7 +46,7 @@ The GIF \ref{gif:PICONTROLLER2} (best viewed in Adobe Acrobat) illustrated the O
 
 \newpage
 \subsection{Scenario 2: Holding initial position with different muscles Neural Excitation}
-Scenario 2 was simulated during 0.5 seconds with a time step of 0.001s, Kp = 2000 and Ki = 100 (See Table \ref{tab:PI}).
+Scenario 2 was simulated during 0.5 seconds with a time step of 0.001s, Kp=2000 and Ki=100 (See Table \ref{tab:PI}).
 The PI model successfully controlled the force for the 64 positions. The table below presents some results from Scenario 2 for the 9 muscle categories.
 \begin{table}[h]
     \centering
@@ -78,6 +78,9 @@ The PI model successfully controlled the force for the 64 positions. The table b
     \label{table:PIResults}
 \end{table}
 
+The average target position error remains very low with a low variance for the 64 different positions. In addition, the PI controller is able to find the force that will maintain a steady state in half of the simulation time. However, the real simulation time is more than high times higher than the simulated time. This could be because when a matrix singularity is found the system is reset with different initial arm length values. This could delay the process of simulation. 
+The GIF \ref{gif:PICONTROLLER1} (best viewed in Adobe Acrobat) illustrated the OpenSIM movement under the PI controller  maintaining the position during triceps stimulation.
+
 \begin{figure}[h]
     \centering
     \animategraphics[autoplay,loop,width=0.75\textwidth]{12}{Pictures/Results/TricepsExct/frame_}{0}{34}
@@ -85,9 +88,6 @@ The PI model successfully controlled the force for the 64 positions. The table b
     \label{gif:PICONTROLLER1}
 \end{figure}
 
-The GIF \ref{gif:PICONTROLLER1} (best viewed in Adobe Acrobat) illustrated the OpenSIM movement under the PI controller  maintaining the position during triceps stimulation.
-
-The average target position error remains very low with a low variance still for the 64 different positions. In addition, the PI controller is able to find the force that will maintain a steady state in half of the simulation time. However, the real simulation time is more than high times higher than the simulated time. This could be because when a matrix singularity is found the system is reset with different initial arm length values. This could delay the process of simulation. 
 
 \newpage
 \subsection{PI vs PID Controller}
@@ -176,16 +176,16 @@ As seen in the Figures below the arm support reduces oscillation improving the s
 \end{figure}
 
 
-\begin{figure}[h!] 
+\begin{figure}[t] 
+    \vspace*{0pt}
     \centering
-    \begin{subfigure}[b]{0.45\linewidth}
-       \includegraphics[width=1.1\linewidth]{Pictures/Results/stimuated_1_without_support.png}
+    \begin{subfigure}[b]{0.7\linewidth}
+       \includegraphics[width=\linewidth]{Pictures/Results/stimuated_1_without_support.png}
         \caption{PI Controller Without Arm Support.}
     \end{subfigure}
-    \hfill
-    %\vspace{1cm} % Adjust the space between the figures as needed
-    \begin{subfigure}[b]{0.45\linewidth}            
-        \includegraphics[width=1.1\linewidth]{Pictures/Results/stimuated_1_with_support.png}
+    \vspace{1cm} % Adjust the space between the figures as needed
+    \begin{subfigure}[b]{0.7\linewidth}            
+        \includegraphics[width=\linewidth]{Pictures/Results/stimuated_1_with_support.png}
         \caption{PI Controller With Arm Support.}
     \end{subfigure}
 

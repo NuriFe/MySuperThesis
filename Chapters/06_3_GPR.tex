@@ -1,3 +1,4 @@
+\cleardoublepage
 \section{Semi-Parametric GPR Models}
 
 In this section the results of the GPR models for two muscles is shown. Figure \ref{fig:GPRMuscleLowerPectoralis} represents Lower Pectoralis and Figure \ref{fig:GPRMuscleTriceps} represents the Triceps. The rest of the Figures for the rest of the muscles can be found in the github repository under the Data/ModelFigures file. 
@@ -10,6 +11,15 @@ Each plot presents:
     \item The predicted test outputs (in red dashed lines).
     \item A shaded region representing a confidence interval (±2 standard deviations) around the predicted values.
 \end{itemize}
+
+The efficiency of the models were tested by computing the feasibility of 960 generated points (Figure \ref{fig:960 points}). A point was considered feasible if the static controller developed on Section \ref{NeuralController} was able to calculate the corresponding neural activations that will hold the arm in that position for 1 second. The static controller was able to find the neural excitations for 74.06\% of the points. The GIF \ref{gif:Feasiblepoints} shows in green the feasible points and in red the non-feasible ones.
+
+\begin{figure}[h!]
+    \centering
+   \includegraphics[width=0.4\linewidth]{Pictures/Results/960points.png}
+    \caption{960 generated points}
+    \label{fig:960 points}
+\end{figure}
 
 \begin{figure}[htbp]
     \centering
