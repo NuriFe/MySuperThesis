@@ -2,7 +2,7 @@
 
 This chapter presents the arm control design and development that will achieve the objectives highlighted in Section \ref{Design} and illustrated in Figure \ref{fig:bdd}. This journey spans across three stages, each building up from the preceding one, starting from a static control to a sophisticated EMG-influenced control.  
 
-The chapter commences with the \textbf{Static Controller}. This controllers serves as a foundation to ensure the arm's steadiness in a specified position. Utilizing the models from Section \ref{sec:model} and combining it with a PD Controller, the necessary neural activations are generated to hold the arm in the static position. To measure its effectiveness, the controller is assessed across 960 points. From this examination, a select group of \textit{feasible points} are identified. A feasible point signifies that the controller was able to find the corresponding neural activation to sustain a target position uninterrupted for a full second. 
+The chapter commences with the \textbf{Static Controller}. This controllers serves as a foundation to ensure the arm's steadiness in a specified position. Utilizing the models from Section \ref{sec:model} and combining it with a PI Controller, the necessary neural activations are generated to hold the arm in the static position. To measure its effectiveness, the controller is assessed across 960 points. From this examination, a select group of \textit{feasible points} are identified. A feasible point signifies that the controller was able to find the corresponding neural activation to sustain a target position uninterrupted for a full second. 
 
 Building upon the static controller, the next phase of \textbf{Path Following Quasi-Static Controller} incorporates the element of motion. The calculated feasible points serve as stepping stones, forming a path designed using the K-Nearest-Neighbours algorithm. This path will be used by the controller to move the arm from point to point, steadily aiming for the end target position.
 
@@ -14,11 +14,6 @@ By the end of this chapter, readers will have an understanding of the layered pr
 
 The development of the controller, inspired by the methodologies proposed in the paper \cite{QSC}, aims to determine the optimal muscle excitation to stabilize the wrist's position. The architectural layout of this controller is portrayed on Figure \ref{fig:BDC}.
 
-The input of the controller is the desired arm configuration. Using the Inverse of the Arm Statics model, described in Section \ref{sec:model}, the required torques to maintain the arm in a static position are computed. These torques are subsequently given as an input into the Muscle Torque Production model, elaborated in Section \ref{sec:model}. This model outputs the corresponding muscle excitations which will define the neural excitation input for the Dynamic Arm Simulator. 
-
-The Dynamic Arm Simulator will then determine the arm's dynamics in accordance with the Rosenbrock equation, as explained in Section \ref{sec:dynamics}. Post these dynamic computations, the wrist's actual position is deduced. The error between the desired and the actual wrist position will drive a PID Controller, which will calculate the corrective force needed to match the desired wrist position. The kinematic Jacobian, Section \ref{sec:torque}, will compute the requisite corrective torque. This torque, when combined with the desired torque from the Inverse Arm Statics, provides the total torque which is then input to the Inverse Muscle Torque model, closing the control loop. 
-
-
 \begin{figure}[h!]
     \centering
     \includegraphics[width=1\textwidth]{Pictures/Controller/controller-diagram.jpg}
@@ -26,41 +21,150 @@ The Dynamic Arm Simulator will then determine the arm's dynamics in accordance w
     \label{fig:BDC}
 \end{figure}
 
-\subsubsection{PD-Tuning}
-To assure the PID Controller's performance, an exhaustive hand-tuning was undertaken across 20 different positions, concluding in values of \(K_p = 300\) and \(K_i = 100\). \(K_d = 0\) resulting in only a PD. 
+The input of the controller is the desired arm configuration. Using the Inverse of the Arm Statics model, described in Section \ref{sec:model}, the required torques to maintain the arm in a static position are computed. These torques are subsequently given as an input into the Muscle Torque Production model, elaborated in Section \ref{sec:model}. This model outputs the corresponding muscle excitations which will define the neural excitation input for the Dynamic Arm Simulator. 
 
-\subsection{Predicting Static Torque}
+The Dynamic Arm Simulator will then determine the arm's dynamics in accordance with the Rosenbrock equation, as explained in Section \ref{sec:dynamics}. Post these dynamic computations, the wrist's actual position is deduced. The error between the desired and the actual wrist position will drive a PI Controller, which will calculate the corrective force needed to match the desired wrist position. The kinematic Jacobian, Section \ref{sec:torque}, will compute the requisite corrective torque. This torque, when combined with the desired torque from the Inverse Arm Statics, provides the total torque which is then input to the Inverse Muscle Torque model, closing the control loop. 
 
-To predict the static torque values for an arm configuration, the hyperparameters found for the Gaussian Process Arm Statics model described on section \ref{sec:model} are used. The resultant torque represent the torque needed to hold the arm static in that configuration.
+
+\subsubsection{PI-Tuning}
+To assure the PI Controller's performance, an exhaustive hand-tuning was undertaken across 20 different positions, concluding in values of \(K_p = 300\) and \(K_i = 100\). For detailed results see Section \ref{resultsstaticcontrol}.
+
+\subsection{Implementation}
+
+The code below shows the MATLAB implementation of the Static Controller. It is divided into two sections the initial configuration and the simulation loop.
+
+\begin{lstlisting} [style=Matlab-editor-small]
+%%%% INITIALIZATION
+%Initialize Model
+[model, nstates, ndof, nmus, iLce] = initialize_model();
+
+% Initial state
+x = x_init; 
+
+% Set Simulation Parameters
+tend = 2;
+tstep = .003;
+nsteps = round((tend-time)/tstep+1;
+
+% Initialize parameters
+u=zeros(nmus,1);
+handF=[0;0;0];
+alpha0 = zeros(8,1);
+Moments = zeros(5,1);
+exF=[0;0];
+
+% Initialize derivatives and muscle excitations
+xdot = zeros(nstates,1);
+step_u = zeros(nmus,1);
+        
+complete = 0;
+i = 0;
+\end{lstlisting}
+\newpage
+\begin{lstlisting} [style=Matlab-editor-small]
+%%%% SIMULATION
+while i < nsteps
+    i = i+1;
+    
+    % PI Feedback
+    Kp = 300;
+    Ki = 100;
+    
+    HandCurrent = wrist_position(x);
+    posErr = HandGoal-HandCurrent;
+    sumErr=sumErr+posErr*tstep;
+    Fk=Kp*posErr;
+    Fi=Ki*sumErr;
+    Fdes=Fk+Fi;
+    
+    % Compute torque from Kinematic Jacobian
+    [~, ~, ~, ~, ~, ~, qTH] = das3('Dynamics',x, zeros(size(x)), zeros(138,1));
+    pose=[qTH;x(10:11)];
+    J=computeJacobianDAS_5angles(pose);
+    J=J(:,1:4);
+    tau_feedback=J'*Fdes;
+    
+    % Compute desired torque
+    tau_des = tau_feedback + staticTorque';
+
+    % Predict static torque
+    staticTorque = predict_static_torque(pose)';
+    % Predict activation torque
+    M = predict_activation_torque(pose);
+    
+    % Compute Activation
+    alpha0 = computeActivation(M,staticTorque,alpha0);
+    for j=1:9
+        mus = muscledict(j);
+        u(mus) = alpha0(j);
+    end
+    
+    % Advance simulation by a step
+    [x, xdot, step_u] = das3step(x, u, tstep, xdot, step_u, Moments, exF, handF);
+end                
+\end{lstlisting}
+
+\subsection{Predicting Static Torque and Muscle-Torque Relationship}
+
+To predict the static torque values for an arm configuration ($q (5x1)$), the hyperparameters found for the Gaussian Process Arm Statics model described on Section \ref{sec:model} are used. The resultant torque represent the torque needed to hold the arm static in that configuration.
+
+The muscle-torque relationships \texttt{M} is predicted using the Muscle Torque Production model hyperparameters calculated following the steps explain in Section \ref{sec:model} (see Formula \ref{eq:MAP}). The code gives out a matrix where each column represents the torque for the desired shoulder elevation plane, shoulder elevation, shoulder rotation and elbow flexion produced by each muscle group.
+
+\subsubsection{Implementation}
+To calculate the static torque i = 9 in the code below, resulting in a static torque of size 4x1.  When calculating the muscle torque production the code will loop through the 8 muscles (i = [1:8]) giving an output matrix of 4x8.
+
+\begin{lstlisting} [style=Matlab-editor-small]
+load('modeldata.mat');
+q = desired_position;
+
+covGP = {@covSEard};
+static_torque = zeros(4,1);
+M = zeros(4x8);
+
+muscledata = modeldata.muscle(i);
+% for j = 1:4 x= [elevationplane, shoulderelevation, shoulderrotaion, elbowflexion]
+covSIMPLEj = {@covj};
+covfuncj = {'covSum',{covGP,covSIMPLEj}};
+static_torque(j) = gp(muscledata.x.semiparametric.gpHyperparameters, @infExact, @meanj, covfuncj, @likGauss, muscledata.x.semiparametric.trainingInputs, muscledata.x.semiparametric.trainingOutputs, q);
+(...)
+\end{lstlisting}
+
 
 \subsection{Predicting Muscle Excitations}\label{computemuscleexcitation}
 
-In muscle-driven systems, accurately determining muscle activation patterns is crucial for understanding force generation. The provided functions aim to compute optimal muscle activations under given constraints using the penalty method and a quasi-Newton optimization approach. This method is inspired by \cite{QSC}.
+In muscle-driven systems, accurately determining muscle activation patterns is crucial for understanding force generation. 
 
-The objective is to compute the muscle activation \texttt{act} for given muscle-torque relationships \texttt{M}, desired torques \texttt{tau}, and initial guesses for activations \texttt{alpha0}.
-
-The muscle-torque relationships \texttt{M} the Muscle Torque Production model hyperparameters calculated following the steps explain in Section \ref{sec:model} (see Formula \ref{eq:MAP}). The model gives out a matrix each column represents the torque for the desired shoulder elevation plane, shoulder elevation, shoulder rotation and elbow flexion produced by each muscle group. 
-
-The objective is to solve the equation:
+The objective is to compute the muscle activation $\alpha_0$ for given muscle-torque relationships $M$, desired torques $\tau_{desired}$, and initial guesses for activations is given. This is represented by the following equation:
 \begin{equation}
     \tau_{desired} = M * \alpha_0
 \end{equation}
 
 In other words how much activation the different muscle groups need to generate the desired torque. 
 
-The \textbf{quasi-newton method} is the iterative method used to find this function´s minimum. As computing the Hessian tends to be computationally expensive, the quasi-newton method build an approximation of it iteratively. In other words, it uses and approximation of the information of the function's curvature (Hessian) to find the shortest way to the minimum. 
+The optimized muscle activation solution is calculated employing the quasi-newton method supported by the Armijo rule and a penalty-based approach. This method is inspired by \cite{QSC}.
 
-The function is supported by the Armijo rule and a penalty-based approach, where the muscle activation are effectively optimized. 
+\begin{itemize}
+    \item The \textbf{quasi-newton method} is the iterative method used to find this function´s minimum. As computing the Hessian tends to be computationally expensive, the quasi-newton method builds an approximation of it iteratively. In other words, it uses and approximation of the information of the function's curvature (Hessian) to find the shortest way to the minimum. 
+    \item The \textbf{Armijo rule } is a method to decided how big of a step to take when trying to find the lower point of a curve or surface.  The step is halved every time a step is not taken into a direction where the value of the function is reduced as expected. The Armijo rule is used to determine the step size of the quasi-Newton method. 
+    \item The \textbf{penalty function} makes sure that the muscle activations are withing the range of [0,1], including constraints to the quasi-Newton method. 
+\end{itemize}
 
-The \textbf{armijo rule }is a method to decided how big of a step to take when trying to find he lower point of a curve or surface. 
-The step is halved every time a step is not taken into a direction where the value of the function is reduced as expected. 
+By employing, the quasi-Newton methods, the function efficiently converges to the optimal solution. The figure below shows how it converges in two random moments of the steps of the simulation. The plots show a sharp decline and then flattens, indicating that the optimization is converging.
 
-The \textbf{penalty function} makes sure that the muscle activations are withing the range of [0,1]. 
 
-Together, they are used to determine the step size of the quasi-Newton method and to include constraints in the optimization problem. 
-
-By employing, the quasi-Newton methods, the function efficiently converges to the optimal solution.             
-
+\begin{figure}[h]
+    \centering
+    \begin{subfigure}[b]{0.45\textwidth}
+        \centering
+        \includegraphics[width=0.8\linewidth]{Pictures/Model/convergence.png}
+    \end{subfigure}%
+    \hfill
+    \begin{subfigure}[b]{0.45\textwidth}
+        \centering
+        \includegraphics[width=0.8\linewidth]{Pictures/Model/convergence2.png}
+    \end{subfigure}
+    \caption{Convergence Plot: Gradient Norm vs Iteration}
+\end{figure}
 \subsection{Feasible Points}
 With this tuned controller, a grid, encompassing 960 points, was generated using the \textbf{create\_grid} function (refer to Section \ref{sec:tp}). Each point's arm configuration was calculated using the PI force controller, as detailed in Section \ref{sec:PI}. The feasibility of a point was determined by the ability of the controller to sustain for 1 second its position with an error margin of 0.1. For clarification purposes, the start and the goal position of the controller are set to be the same. 
 For seamless and accurate operations, a time step (\(t_{step}\)) of 0.001 is employed. To improve the controller's stability an auxiliary force is exerted on the arm in the first 100 steps. This eliminates potential oscillations and assures a better control performance.
