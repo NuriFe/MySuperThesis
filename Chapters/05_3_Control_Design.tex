@@ -63,9 +63,19 @@ i = 0;
 \newpage
 \begin{lstlisting} [style=Matlab-editor-small]
 %%%% SIMULATION
+[~, ~, ~, ~, ~, ~, qTH] = das3('Dynamics',x, zeros(size(x)), zeros(138,1));
+pose=[qTH;x(10:11)];
 while i < nsteps
-    i = i+1;
+    i = i+1;   
+
+    % Predict static torque
+    staticTorque = predict_static_torque(pose)';
+    % Predict activation torque
+    M = predict_activation_torque(pose);
     
+    % Compute desired torque
+    tau_des = tau_feedback + staticTorque';
+
     % PI Feedback
     Kp = 300;
     Ki = 100;
@@ -84,16 +94,8 @@ while i < nsteps
     J=J(:,1:4);
     tau_feedback=J'*Fdes;
     
-    % Compute desired torque
-    tau_des = tau_feedback + staticTorque';
-
-    % Predict static torque
-    staticTorque = predict_static_torque(pose)';
-    % Predict activation torque
-    M = predict_activation_torque(pose);
-    
     % Compute Activation
-    alpha0 = computeActivation(M,staticTorque,alpha0);
+    alpha0 = computeActivation(M,tau_des,alpha0);
     for j=1:9
         mus = muscledict(j);
         u(mus) = alpha0(j);
@@ -112,7 +114,7 @@ The muscle-torque relationships \texttt{M} is predicted using the Muscle Torque 
 
 \subsubsection{Implementation}
 To calculate the static torque i = 9 in the code below, resulting in a static torque of size 4x1.  When calculating the muscle torque production the code will loop through the 8 muscles (i = [1:8]) giving an output matrix of 4x8.
-
+\newpage
 \begin{lstlisting} [style=Matlab-editor-small]
 load('modeldata.mat');
 q = desired_position;
@@ -242,11 +244,59 @@ This process is repeated until the path reaches the desired end position. As a r
     \label{fig:FindPath}
 \end{figure}
 
+\subsection{Implementation}
+The Matlab code implements the Path Following Quasi-Static Controller . 
+
+\begin{lstlisting} [style=Matlab-editor-small]
+%%% INITIALIZATION same as Static Controller 
+(...)
+switchTime = 1.3;
+startPos = x; 
+endPos = target;
+d = 4; 
+last = 0;
+pathIdx = 2;
+(...)
+
+path = FindPath(d, startPos, endPos);
+
+%%% SIMULATION 
+
+while last = 0
+    (...) % Same as Static Controller
+    GoalPos = path(pathIdx);
+    if mod(i,floor(switchTime/tstep))==0
+        HandCurrent = wrist_position(x);
+        distance = norm(HandGoal-HandCurrent);
+        if distance < 0.05 || trial >0 
+        if pathIdx < length(path)
+            pathIdx=pathIdx+1;
+        else 
+            last =1; %last point in path
+        end
+        GoalPos = path(pathIdx);
+        [~, ~, ~, ~, ~, ~, qTH] = das3('Dynamics ',GoalPos, zeros (size(x)), zeros
+        (138 ,1));
+        pose =[ qTH; GoalPos(10:11)]
+        
+        % Predict static torque (...)
+        % Predict activation torque (...)
+    end
+    % PI Feedback
+
+    if mod(i,frequency)==0
+        %Compute Activation (...)
+    end
+
+    %Advanced simulation by a step (...)
+    
+\end{lstlisting}
+
 
 \newpage
 \section{EMG-Influenced FES Controller Development}
 
-Building on top of the controllers previously designed and discussed in this section, we further extend our investigation into the intricate challenges faced by stroke patients. An after-math of stroke is the muscular imbalances, most specifically muscle spasticity, which refers to muscle stiffness that influences movement and speed. As a result, they present difficulty extending the arm. The biceps tend to be over-activated and the triceps and anterior deltoid under-activated \cite{IOL}. To counteract these muscular imbalances, this controller has being design to simulate an effective and targeted electric stimulation. 
+Building on top of the controllers previously designed and discussed in this section, the investigation is extended into the intricate challenges faced by stroke patients. An after-math of stroke is the muscular imbalances, most specifically muscle spasticity, which refers to muscle stiffness that influences movement and speed. As a result, they present difficulty extending the arm. The biceps tend to be over-activated and the triceps and anterior deltoid under-activated \cite{IOL}. To counteract these muscular imbalances, this controller has being design to simulate an effective and targeted electric stimulation. 
 
 Two key additions are included in the following controller design:
 
@@ -255,11 +305,11 @@ Two key additions are included in the following controller design:
     \item the addition of FES to activate the triceps
 \end{enumerate}
 
-A complete flow diagram is portrayed on Figure \ref{fig:FESController}
+A complete flow diagram is portrayed on Figure \ref{fig:FESController}.
 
 \subsection{Emulating Biceps Over-Activity}
 
-The code segment initiates by calculating muscle activation levels using the \textbf{\textit{computeActivations}} function, which factors in muscle force models and desired torques  (refer to Section \ref{NeuralController}). Then, it proceeds to iterate through the set of  muscles. When the loop reaches the fifth muscle, the biceps, the activation level of the biceps is modulated by a factor termed \textbf{\textit{stroke}}, representing the over-activity induced due to the stroke condition. This modulation is subsequently bounded: if the resultant activation surpasses a threshold of 1, it is capped at this upper limit. In scenarios where the activation is null and the stroke factor exceeds 1, a minimal activation level of 0.3 is set to ensure a base activation. For each iteration, the modified activation values are assigned to the corresponding muscle index in the control input vector u. It is important to highlight that the values are only updated with respect to the FES frequency (concept explained in Section \ref{sec:path}).
+The code segment initiates by calculating muscle activation levels using the \textbf{\textit{computeActivations}} function, which factors in muscle force models and desired torques  (refer to Section \ref{NeuralController}). Then, it proceeds to iterate through the set of  muscles. When the loop reaches the biceps, the activation level of the biceps is modulated by a factor termed \textbf{\textit{stroke}}, representing the over-activity induced due to the stroke condition. This modulation is subsequently bounded: if the resultant activation surpasses a threshold of 1, it is capped at this upper limit. In scenarios where the activation is null and the stroke factor exceeds 1, a minimal activation level of 0.3 is set to ensure a base activation. For each iteration, the modified activation values are assigned to the corresponding muscle index in the control input vector u. It is important to highlight that the values are only updated with respect to the FES frequency (concept explained in Section \ref{sec:path}).
 
 \subsection{FES Stimulator for the Triceps}
 
@@ -288,9 +338,9 @@ For correct simulation it is ensured that the triceps activation remains bounded
 \subsection{PD Controller Tuning: Simulated Annealing}
 
 
-Building on the insights from the study by \cite{PDP}, their approach was adopted to refine the performance of a proportional derivative controller for a two-segment planar arm model.
+Building on the insights from the study by \cite{PDP}, where they refine the performance of a proportional derivative controller for a two-segment planar arm model, simulated annealing is used to tune the gains of the FES controller. 
 
-The core idea was to identify the best controller gains for the sigmoid function (Equation \ref{sigmoid}) by minimizing the positional error over time. This error was quantified by the formula:
+The core idea is to identify the best controller gains for the sigmoid function (Equation \ref{sigmoid}) by minimizing the positional error over time. This error was quantified by the formula:
 
 \begin{equation}
 f_{error} = \sqrt{\frac{1}{2TN_m}\sum_{i=1}^{N_m}\sum_{j=1}^{3}\int_{0}^{T}(\varphi_{ij}(t)-\varphi_{ij}^{target})^2 dt}
